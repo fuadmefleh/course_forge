@@ -9,7 +9,7 @@
     "url": "git+https://github.com/fuadmefleh/course_forge.git"
   },
   "bin": {
-    "course-forge": "./bin/run.js"
+    "course-forge": "bin/run.js"
   },
   "scripts": {
     "postinstall": "echo \"Run 'npx playwright install chromium' once to enable the QA render-check.\""
