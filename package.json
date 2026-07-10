@@ -1,0 +1,24 @@
+{
+  "name": "course-forge",
+  "version": "0.1.0",
+  "description": "Turn a topic into a fully drafted, illustrated, QA-checked online course. storyboard -> draft -> author -> illustrate -> QA review.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "course-forge": "./bin/run.js"
+  },
+  "scripts": {
+    "postinstall": "echo \"Run 'npx playwright install chromium' once to enable the QA render-check.\""
+  },
+  "dependencies": {
+    "marked": "^14.1.4",
+    "sanitize-html": "^2.14.0",
+    "playwright": "^1.48.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.8.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

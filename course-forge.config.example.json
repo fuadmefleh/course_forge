@@ -1,0 +1,7 @@
+{
+  "voice": "Clear, calm, precise, and engaging instructional voice. Plain English, no unnecessary jargon, no filler, no hype, no exclamation points. Prefer concrete examples over abstract claims.",
+  "imageStyle": "Clean, professional editorial illustration. Abstract and conceptual, no readable text, no logos. Generous negative space, restrained color palette, high quality, no artifacts.",
+  "textModel": "gpt-5",
+  "imageModel": "gpt-image-1",
+  "brandColor": "#2563eb"
+}
