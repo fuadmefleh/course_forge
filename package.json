@@ -4,6 +4,10 @@
   "description": "Turn a topic into a fully drafted, illustrated, QA-checked online course. storyboard -> draft -> author -> illustrate -> QA review.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fuadmefleh/course_forge.git"
+  },
   "bin": {
     "course-forge": "./bin/run.js"
   },
