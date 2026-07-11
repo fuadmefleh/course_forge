@@ -65,13 +65,17 @@ async function domOverflowIssues(page) {
       if (img.complete && img.naturalWidth === 0) issues.push(`broken image: ${img.currentSrc || img.src}`)
     })
     document.querySelectorAll('*').forEach((el) => {
+      const cls = typeof el.className === 'string' ? el.className : ''
+      if (cls.includes('line-clamp') || cls.includes('sr-only') || cls.includes('visually-hidden')) return // intentional, not a bug
       const cs = getComputedStyle(el)
-      if (cs.webkitLineClamp && cs.webkitLineClamp !== 'none') return // intentional truncation, not a bug
+      if (cs.webkitLineClamp && cs.webkitLineClamp !== 'none') return
       if (cs.overflow !== 'hidden' && cs.overflowX !== 'hidden' && cs.overflowY !== 'hidden') return
+      // Deliberately visually-hidden elements (screen-reader-only text, etc.) are shrunk
+      // to ~1px on purpose; that's not the same bug as a normal-sized box clipping content.
+      if (el.clientWidth <= 1 || el.clientHeight <= 1) return
       const clipsH = el.scrollWidth > el.clientWidth + 2
       const clipsV = el.scrollHeight > el.clientHeight + 2
       if (clipsH || clipsV) {
-        const cls = typeof el.className === 'string' ? el.className : ''
         issues.push(`possible clipped content on <${el.tagName.toLowerCase()}${cls ? ` class="${cls}"` : ''}>`)
       }
     })
