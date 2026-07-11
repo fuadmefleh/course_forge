@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Why Code Review Exists: Principles, Roles, and Mindset - Effective Code Review: A Practical Guide</title>
+  <meta name="description" content="A practical guide to respectful, efficient code reviews that prioritize correctness, clarity, and risk management, with concrete checklists, flows, and examples." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #24292f;
+      line-height: 1.6;
+    }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+    .back { display: inline-block; font-size: 0.85rem; color: #57606a; margin-bottom: 24px; }
+    .hero-img { width: 100%; border-radius: 12px; margin-bottom: 32px; display: block; }
+    h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 12px; }
+    .subtitle { font-size: 1.1rem; color: #57606a; margin-bottom: 32px; }
+    .meta { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #2563eb; margin-bottom: 8px; }
+    article h2 { font-size: 1.4rem; margin: 2em 0 0.6em; }
+    article h3 { font-size: 1.15rem; margin: 1.6em 0 0.5em; }
+    article p, article ul, article ol { margin-bottom: 1em; }
+    article ul, article ol { padding-left: 1.4em; }
+    article blockquote {
+      border-left: 3px solid #2563eb;
+      padding: 0.2em 1.2em;
+      margin: 1.5em 0;
+      color: #444;
+      font-style: italic;
+    }
+    article figure { margin: 2em 0; }
+    article figure img { width: 100%; border-radius: 10px; display: block; }
+    article figcaption { font-size: 0.85rem; color: #57606a; margin-top: 8px; }
+    article pre { background: #f6f8fa; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    .lesson-list { list-style: none; margin-top: 24px; }
+    .lesson-card {
+      display: block;
+      border: 1px solid #e2e2e2;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    .lesson-card:hover { border-color: #2563eb; text-decoration: none; }
+    .lesson-card .num { font-size: 0.75rem; color: #2563eb; margin-bottom: 4px; display: block; }
+    .lesson-card .excerpt {
+      color: #57606a;
+      font-size: 0.9rem;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .pagenav { display: flex; justify-content: space-between; gap: 16px; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e2e2; }
+    .pagenav a { display: block; border: 1px solid #e2e2e2; border-radius: 10px; padding: 12px 16px; font-size: 0.9rem; max-width: 48%; }
+    .pagenav a:hover { border-color: #2563eb; text-decoration: none; }
+    .pagenav .dir { font-size: 0.7rem; text-transform: uppercase; color: #57606a; display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Effective Code Review: A Practical Guide</a>
+    
+    <span class="meta">Part 1 of 4 &middot; 18 min read</span>
+    <img class="hero-img" src="images/why-code-review-exists-principles-roles-and-mindset-hero.png" alt="Why Code Review Exists: Principles, Roles, and Mindset" />
+    <h1>Why Code Review Exists: Principles, Roles, and Mindset</h1>
+    <article><h2>What Code Review Is For</h2>
+<p>Code review is a practice, not a ritual. Its purpose is to make the codebase safer and easier to work in while helping people learn from each other. When it works well, it delivers four outcomes:</p>
+<ul>
+<li><strong>Correctness.</strong> Bugs are caught early, edge cases are considered, and assumptions are challenged. A reviewer might notice an off-by-one index, a race condition, or an API misuse that looks fine in a small test but fails in production.</li>
+<li><strong>Readability.</strong> Others can understand and modify the code later. Names are clearer, functions are smaller, the flow is easier to follow, and comments explain why, not just what.</li>
+<li><strong>Maintainability.</strong> The design fits the system, responsibilities are separated, tests document behavior, and the change leaves the codebase in a state where the next change will be simpler, not harder.</li>
+<li><strong>Knowledge sharing and risk reduction.</strong> No single person becomes the only expert in an area, and deployment, security, and operational risks are surfaced before code merges.</li>
+</ul>
+<p>For example, an author adds a cache around a slow database query. The review catches that the cache key ignores a user-specific parameter, which would leak data between users. The discussion prompts the author to use a composite key and add unit tests. The reviewer also points out a similar pattern in another service, which leads to a shared helper later. In one thread, we increased correctness, readability, maintainability, and spread knowledge.</p>
+<p>Review can feel like friction, but the time it takes often saves more later. A 15-minute review that prevents a production incident and a rollback pays for itself many times over. A 10-minute discussion about naming that avoids a week of confusion also pays back quickly. The trick is to focus review on what matters most and to do it in a respectful, efficient way.</p>
+<h2>Mindset and Tone: Curious, Empathetic, Specific</h2>
+<p>How you give and receive feedback determines whether review feels like help or judgment. Aim for curiosity, empathy, and specificity.</p>
+<ul>
+<li><strong>Curious.</strong> Start with questions that uncover intent and constraints. “What invariant are we relying on here?” is better than “This is wrong.” Curiosity helps you see the bigger picture and avoids false alarms.</li>
+<li><strong>Empathetic.</strong> Assume the author made choices for reasons you do not yet know. Time pressure, legacy constraints, partial requirements, and experiments are all real. Avoid loaded words like “obvious,” “trivial,” or “clean.” They shut down conversation.</li>
+<li><strong>Specific.</strong> Point to exact lines or behaviors and, when possible, suggest an alternative. “Consider using a streaming parser here to avoid loading the whole file into memory; our files can be 200 MB” is actionable. “This feels heavy” is not.</li>
+</ul>
+<blockquote>
+<p>Review the code to help the team, not to prove a point.</p>
+</blockquote>
+<p>Language matters. You can be direct without being abrasive. A few patterns that work:</p>
+<ul>
+<li>Ask before asserting:
+<ul>
+<li>“Could we parse once and reuse the result across requests?”</li>
+<li>“What trade-off led you to inline this logic instead of extracting a helper?”</li>
+</ul>
+</li>
+<li>Focus on outcomes:
+<ul>
+<li>“This path retries forever on 500 errors; how do we avoid hot loops during outages?”</li>
+<li>“If the service restarts mid-migration, will we re-apply the step?”</li>
+</ul>
+</li>
+<li>Offer an alternative with context:
+<ul>
+<li>“If we use a prepared statement here, we avoid SQL injection and let the driver handle escaping.”</li>
+<li>“This function is 120 lines; splitting the validation into a separate function would make the happy path easier to see.”</li>
+</ul>
+</li>
+</ul>
+<p>As an author, receive feedback in the same spirit. If a comment seems off-base, start by clarifying the context you had in mind. “Ah, this API is only called in batch mode, so latency is less important than memory. I should add that to the docstring.” If you disagree, explain the trade-offs you considered and invite alternatives. “I tried the streaming route, but it complicated error handling; happy to revisit if you think it’s worth the added complexity.”</p>
+<p>Being specific also means limiting personal style debates. If your team uses a formatter or has a style guide, do not argue about brace placement, import sorting, or whitespace unless it harms readability in a concrete way. Treat style nitpicks as suggestions, not blockers.</p>
+<h2>Roles and Responsibilities: Author and Reviewer</h2>
+<p>A good review has two clear roles with complementary responsibilities.</p>
+<h3>Author responsibilities</h3>
+<ul>
+<li>Provide context. Explain the problem, the constraints, and the chosen approach in the pull request description. Link to tickets, designs, and prior discussions. Point out risky areas, temporary compromises, and follow-ups.</li>
+<li>Keep the change focused. Smaller, self-contained diffs are easier to review. Split refactors from behavior changes. Move renames and generated files into separate commits or PRs.</li>
+<li>Include tests. Add or update unit, integration, and end-to-end tests as needed. Show that the change works and that behavior is preserved or intentionally changed.</li>
+<li>Call out what needs attention. Ask reviewers to look closely at critical logic or parts you are unsure about. “Please pay attention to the retry/backoff logic in Client.go.”</li>
+<li>Respond and iterate. Address feedback promptly. Explain your reasoning when you disagree. Update the description to reflect changes.</li>
+</ul>
+<h3>Reviewer responsibilities</h3>
+<ul>
+<li>Protect correctness and standards. Check logic, edge cases, error handling, and invariants. Ensure the change aligns with architecture guidelines, security practices, and performance budgets.</li>
+<li>Manage risk. Ask about rollbacks, migrations, and operational impact. Consider access control, input validation, and data privacy. Flag any privileged operations or secrets handling.</li>
+<li>Seek clarity and coherence. Suggest names, structure, and comments that make the code easier to understand and maintain. Encourage patterns the team values.</li>
+<li>Be timely and respectful. Acknowledge review requests. If you cannot review soon, say so. Group related comments to reduce noise. Distinguish must-fix items from nice-to-haves.</li>
+<li>Verify tests and tooling. Ensure tests cover key paths and failure modes. Check that CI is green and relevant static analysis warnings are addressed.</li>
+</ul>
+<p>Agree on a definition of done. Before merging, what must be true? Common items:</p>
+<ul>
+<li>All required reviewers approved.</li>
+<li>CI is green: tests pass, linters and formatters run, static analysis is clean or justified.</li>
+<li>Backwards compatibility addressed or documented.</li>
+<li>Monitoring, alerts, or dashboards updated if needed.</li>
+<li>Migrations are safe and reversible, with a rollout plan and a rollback plan.</li>
+<li>Documentation and release notes updated where relevant.</li>
+</ul>
+<p>Clear roles and a shared definition of done keep reviews focused and fair. They also make it easier to resolve disagreements: defer to the team’s standards and the stated goals of the change.</p>
+
+<h2>Scope and Priorities: Review the Right Things First</h2>
+<p>Not every change deserves the same level of scrutiny. Set the scope and prioritize the concerns that matter most.</p>
+<p>Prefer small diffs. A 200-line pull request focused on one feature is faster and safer to review than a 1,500-line grab bag. When you can, split work:</p>
+<ul>
+<li>Behavior change vs refactor. Move files, rename identifiers, and reformat in one PR; change logic in another. This lets reviewers skim mechanical changes and spend time on behavior.</li>
+<li>Generated or vendor files. Exclude them from the diff view or put them in a separate commit. Do not bury logic under a wall of machine output.</li>
+</ul>
+<p>Establish priorities. In this order, look for:</p>
+<ol>
+<li><strong>Correctness</strong>
+<ul>
+<li>Does the code do what it claims? Are there tests that prove it?</li>
+<li>Are error cases handled, not just the happy path?</li>
+<li>Are invariants stated and enforced?</li>
+<li>Are edge cases covered: empty inputs, timeouts, retries, partial failures?</li>
+</ul>
+</li>
+<li><strong>Security and data integrity</strong>
+<ul>
+<li>Are inputs validated and outputs sanitized?</li>
+<li>Is authentication and authorization enforced where needed?</li>
+<li>Are secrets handled via the right mechanism, not hard-coded or logged?</li>
+<li>Are queries parameterized? Is user input used in file paths or commands?</li>
+</ul>
+</li>
+<li><strong>Tests</strong>
+<ul>
+<li>Do tests cover critical paths and regressions?</li>
+<li>Are tests stable and deterministic?</li>
+<li>Do test names and assertions explain behavior?</li>
+<li>Are there missing tests for new branches or error handling?</li>
+</ul>
+</li>
+<li><strong>Clarity and maintainability</strong>
+<ul>
+<li>Is the intent clear from names, structure, and comments?</li>
+<li>Is complexity reasonable? Could the code be simpler?</li>
+<li>Are responsibilities separated and encapsulated?</li>
+<li>Will others be able to extend or debug this later?</li>
+</ul>
+</li>
+<li><strong>Performance and scalability (when relevant)</strong>
+<ul>
+<li>Does the change introduce N+1 queries, O(n^2) loops, or unbounded memory growth?</li>
+<li>Are there reasonable timeouts and backoffs?</li>
+<li>Is there a clear bottleneck, and is it justified?</li>
+</ul>
+</li>
+<li><strong>Style and nits</strong>
+<ul>
+<li>Prefer automated formatters and linters to enforce rules.</li>
+<li>Only block on style if it affects readability or correctness.</li>
+</ul>
+</li>
+</ol>
+<p>A prioritization example: a pull request renames a package across the codebase (800 lines) and introduces a 20-line change to the authentication check. Spend your time on the auth change first. Is it checking the right claim? Does it fail closed? Are there tests to show unauthorized access is denied? Once that is safe, skim the rename to confirm it is mechanical and consistent.</p>
+<p>Another example: a diff adds string concatenation to build a SQL query using user input. This is a red flag. Suggest parameterized queries and point to the team’s database guidelines. Ask for a test that proves attempted injection fails. This is a must-fix, not a nice-to-have.</p>
+<p>Prioritization also means avoiding scope creep in review comments. If you see an unrelated smell in the surrounding code, note it as a follow-up issue unless it is directly affected by the change. “Preexisting: the cache eviction strategy is LRU but we lack metrics to validate it. Not blocking this PR; opened issue #1234.”</p>
+<p>When to request changes vs approve with comments:</p>
+<ul>
+<li>Request changes when correctness, security, or risk concerns are unresolved; when tests are missing for critical paths; or when the change violates key team standards.</li>
+<li>Approve with comments when you have suggestions that would improve clarity or maintainability but are not essential for safety. Mark which comments are optional.</li>
+</ul>
+
+<h2>Healthy Defaults: Guidelines, Checklists, and CI</h2>
+<p>Healthy defaults make reviews faster and less subjective. Use team agreements and tools to catch the obvious so humans focus on judgment and trade-offs.</p>
+<p>Team guidelines. Maintain a concise engineering playbook that covers:</p>
+<ul>
+<li>Coding standards and naming conventions.</li>
+<li>Architectural principles and when to favor one pattern over another.</li>
+<li>Security practices: input validation, secrets, crypto, logging.</li>
+<li>Testing strategy: what to test at unit, integration, and e2e levels.</li>
+<li>Review process: required approvals, definition of done, and SLAs.</li>
+</ul>
+<p>Keep guidelines in the repo. Link them in your pull request template. When disagreements arise, refer to the guidelines first. If the guidelines are wrong or unclear, propose a change there, not ad hoc exceptions in a PR thread.</p>
+<p>Checklists. A short checklist minds the gaps:</p>
+<ul>
+<li>For authors:
+<ul>
+<li>Does the PR description explain the problem, approach, and alternatives considered?</li>
+<li>Are key risks and mitigations stated?</li>
+<li>Are tests updated and passing?</li>
+<li>Are docs, configs, and migrations included?</li>
+</ul>
+</li>
+<li>For reviewers:
+<ul>
+<li>Have I looked at the tests first?</li>
+<li>Are security-sensitive paths handled correctly?</li>
+<li>Is there a rollback plan if needed?</li>
+<li>Did I distinguish must-fix from suggestions?</li>
+</ul>
+</li>
+</ul>
+<p>Automated tooling. Let machines enforce what they can:</p>
+<ul>
+<li>Formatters and linters to standardize style and catch common mistakes.</li>
+<li>Static analysis and type checking to flag nullability, unused code, or unsafe casts.</li>
+<li>Security scanners for dependencies and code.</li>
+<li>CI pipelines that run tests in parallel and surface flakiness.</li>
+<li>Pre-commit hooks to prevent secrets and large files from entering the repo.</li>
+</ul>
+<p>Configure CI to block merges on failures that matter: tests, security scans, and formatters. Do not block on informational checks unless they are consistently useful. Keep CI fast enough that people trust it.</p>
+<p>Templates and labels. Use pull request templates that ask for context, screenshots, or before/after metrics. Use labels to mark risk levels, affected components, or areas that need specialized reviewers. These small practices reduce back-and-forth.</p>
+<h2>Bias Traps: What Warps Our Judgment</h2>
+<p>Humans bring biases to every review. Naming them helps you avoid them.</p>
+<ul>
+<li>Anchoring on naming or nits. It is easy to spend 10 comments on variable names and miss a logic bug. Strategy: timebox nitpicks, then do a second pass focused on behavior. Use linters to automate style so you do not anchor on it.</li>
+<li>Halo effect. When the author is senior or well-regarded, you might assume the change is fine. Strategy: review the code the same way regardless of author. Let the priorities guide you. If something seems complex, say so even if you trust the person.</li>
+<li>Sunk-cost bias. If the author has clearly invested a lot of time, you may hesitate to request a rework. Strategy: separate empathy from standards. Acknowledge the effort, then discuss whether the approach meets the bar. Offer to pair on a revision.</li>
+<li>Confirmation bias. Looking for evidence that supports your initial impression. Strategy: seek disconfirming details. Ask, “What case would break this?” or “What assumption am I making here?”</li>
+<li>Recency bias. Overweighting a recent incident. Strategy: apply consistent standards. Do not turn one outage into a blanket ban on a tool without evidence.</li>
+</ul>
+<p>A simple tactic helps with most biases: ask clarifying questions before judging. “What guarantees do we have about ordering here?” might surface that the queue is FIFO only per partition, which changes the right approach. If you cannot explain a piece of code back to the author, you probably need more context, not a quick fix.</p>
+<p>As an author, be aware of your own bias toward defending your solution. You can both explain your reasoning and remain open to alternatives. “I chose this because X and Y. If we switch to Z, we gain A but lose B. Given the current SLA, I thought B mattered more. Do you see a path that gets us both?”</p>
+<h2>A Practical Review Flow</h2>
+<p>Here is a simple flow that balances depth with efficiency.</p>
+<ol>
+<li><strong>Read the context</strong>
+<ul>
+<li>Start with the pull request description. What problem is being solved? What constraints or deadlines apply? What are the risks?</li>
+<li>Skim linked tickets or docs if the description is thin. If context is missing, ask for it before diving into the diff.</li>
+</ul>
+</li>
+<li><strong>Run the code when feasible</strong>
+<ul>
+<li>Check out the branch and run tests locally or in a dev environment. If it is a UI change, click through the interface. If it is a data migration, run it against a snapshot.</li>
+<li>This builds intuition and reveals issues that are hard to see in a diff.</li>
+</ul>
+</li>
+<li><strong>Skim the diff for structure</strong>
+<ul>
+<li>Get a sense of the size and types of changes. Identify generated files, renames, and large mechanical moves. Collapse them in your view.</li>
+<li>Note the files where the behavior changes. Start there.</li>
+</ul>
+</li>
+<li><strong>Review by priority</strong>
+<ul>
+<li>Correctness and security first. Read critical paths end-to-end. Consider failure modes and edge cases. Leave comments that show you traced the flow.</li>
+<li>Tests next. Do tests cover the new behavior? Are there missing cases? Are tests readable and meaningful?</li>
+<li>Clarity and maintainability. Suggest names, extractions, or comments where they improve understanding.</li>
+</ul>
+</li>
+<li><strong>Write helpful comments</strong>
+<ul>
+<li>Group related points into one comment if possible. Avoid scattered, repetitive notes.</li>
+<li>Use examples. “If items = [], this map access will panic. Consider early return.”</li>
+<li>Mark severity. Prefix with “Must fix” or “Nit” so the author can triage.</li>
+</ul>
+</li>
+<li><strong>Decide on the state</strong>
+<ul>
+<li>Approve, approve with comments, or request changes. Be clear on what is blocking merge.</li>
+<li>If a follow-up is acceptable, create or ask for a ticket so it is not lost.</li>
+</ul>
+</li>
+<li><strong>Close the loop</strong>
+<ul>
+<li>When the author updates, re-review the relevant parts. If you requested changes, verify they are addressed.</li>
+<li>After merge, reflect if the review surfaced unclear guidelines. If yes, propose an update to the playbook.</li>
+</ul>
+</li>
+</ol>
+<p>Phrasing examples for common situations:</p>
+<ul>
+<li>Missing tests: “Must fix: This adds a new branch for expired sessions. Please add a unit test that shows we redirect to login when the session is expired.”</li>
+<li>Risky migration: “Must fix: This migration updates 10M rows in place. Can we make it idempotent and add a batch size with pause/resume? What is the rollback plan?”</li>
+<li>Naming vs intent: “Nit: Consider renaming ‘x’ to ‘retryCount’ for clarity. Not blocking.”</li>
+<li>Unclear invariant: “Question: Is it guaranteed that process() is only called after validate()? If so, could we add an assert or a comment to state that invariant?”</li>
+</ul>
+<h2>Handling Disagreements and Trade-offs</h2>
+<p>Disagreements happen. Treat them as a search for the best trade-off under shared constraints, not as a win-lose argument.</p>
+<p>Principles to apply:</p>
+<ul>
+<li>Return to the goal. What outcome does this change need to achieve? Which risks matter most? Align on that first.</li>
+<li>Bring data. Microbenchmarks, error rates, or production metrics can decide many debates quickly. If you cannot measure now, agree on a safe default and a plan to measure later.</li>
+<li>Prefer reversible steps. If both approaches are viable, choose the one that is easier to roll back or iterate on.</li>
+<li>Use the playbook. If a guideline covers the issue, follow it. If it does not, decide now and update the guideline for next time.</li>
+<li>Timebox and escalate when needed. If you cannot agree after a couple of exchanges, schedule a quick call or involve a tie-breaker like a tech lead. Write down the decision and rationale.</li>
+</ul>
+<p>Example. An author prefers a clever but dense bit-twiddling to speed up a hot path. The reviewer is concerned about readability and future modifications. They agree to:</p>
+<ul>
+<li>Add a simple reference implementation behind a flag for test comparison.</li>
+<li>Keep the optimized version but add a detailed comment and a unit test suite that proves equivalence.</li>
+<li>Set up a benchmark in CI. If the optimization does not deliver a measurable gain, delete it.</li>
+</ul>
+<p>This preserves correctness, documents intent, and keeps performance an evidence-based choice.</p>
+<h2>Building a Learning Loop</h2>
+<p>Every review is a chance to make the next one easier.</p>
+<p>As an author:</p>
+<ul>
+<li>Invest in clear PR descriptions. Over time, reuse a structure that works: problem, constraints, approach, alternatives considered, risks and mitigations, tests and evidence.</li>
+<li>Preempt common questions. If you know a choice is unusual, explain it upfront. Link to a spike or an ADR (architecture decision record) if you have one.</li>
+<li>Keep changes small and scoped. Queue follow-ups if needed. Use feature flags to separate deployment from release.</li>
+</ul>
+<p>As a reviewer:</p>
+<ul>
+<li>Leave comments that teach, not just judge. Link to docs or examples. Explain the “why,” not just the “what.”</li>
+<li>Notice recurring themes. If the same issue appears in many reviews, propose a guideline, a helper library, or a linter rule.</li>
+<li>Share patterns. When you spot a good approach, call it out. Positive feedback spreads good practice just as fast as nitpicks spread bad feelings.</li>
+</ul>
+<p>Teams improve when they make these loops explicit. A weekly review of tricky PRs can surface patterns, clarify standards, and reduce subjectivity. A short note in the playbook after a production incident can save the next person hours.</p>
+<h2>Examples of Focused Reviews</h2>
+<p>To make this concrete, here are short scenarios and how to approach them.</p>
+<h3>Scenario 1: A new API endpoint to create a user</h3>
+<ul>
+<li>What to check:
+<ul>
+<li>Does it validate input properly? Are email and password defaults safe?</li>
+<li>Is authentication required? Are rate limits applied?</li>
+<li>Are errors clear and do they avoid leaking sensitive details?</li>
+<li>Are there unit tests for valid, invalid, and duplicate inputs?</li>
+<li>Is logging sanitized to avoid storing PII?</li>
+</ul>
+</li>
+<li>What to de-emphasize:
+<ul>
+<li>Whether the controller uses two or three private helpers if readability is fine.</li>
+<li>Minor naming nits when intent is clear.</li>
+</ul>
+</li>
+</ul>
+<h3>Scenario 2: A refactor extracting a utility module</h3>
+<ul>
+<li>What to check:
+<ul>
+<li>Does behavior remain the same? Are there regression tests?</li>
+<li>Are new boundaries sensible? Is there any circular dependency risk?</li>
+<li>Are public APIs documented and minimal?</li>
+</ul>
+</li>
+<li>What to de-emphasize:
+<ul>
+<li>Personal preference for file organization if the team has no standard and the change is consistent.</li>
+</ul>
+</li>
+</ul>
+<h3>Scenario 3: A database migration adding a nullable column</h3>
+<ul>
+<li>What to check:
+<ul>
+<li>Is it safe to deploy in stages? Are defaults handled?</li>
+<li>How are reads/writes handled during rollout?</li>
+<li>Is there a backfill plan and a rollback plan?</li>
+<li>Are dashboards/alerts updated for any new error modes?</li>
+</ul>
+</li>
+<li>What to de-emphasize:
+<ul>
+<li>The exact formatting of the SQL if autoformatted and reviewed by tools.</li>
+</ul>
+</li>
+</ul>
+<h3>Scenario 4: A performance optimization in a parser</h3>
+<ul>
+<li>What to check:
+<ul>
+<li>Are there benchmarks showing the gain?</li>
+<li>Do tests cover edge cases that were previously slow?</li>
+<li>Does the optimization risk stack overflows, unbounded memory, or undefined behavior?</li>
+</ul>
+</li>
+<li>What to de-emphasize:
+<ul>
+<li>Micro-optimizations that complicate code without measurable benefit.</li>
+</ul>
+</li>
+</ul>
+<p>These scenarios show the same pattern: prioritize safety, clarity, and evidence over taste.</p>
+<h2>Small Diffs, Big Wins</h2>
+<p>Small, focused pull requests are the single best way to make review easier and more effective.</p>
+<p>Why small diffs help:</p>
+<ul>
+<li>They narrow the mental load. Reviewers can hold the entire change in their head and reason about it.</li>
+<li>They reduce merge conflicts. Smaller changes merge faster and are less likely to conflict with others’ work.</li>
+<li>They isolate risk. If something goes wrong, it is easier to revert or fix incrementally.</li>
+<li>They speed up iteration. Feedback arrives sooner, and authors can respond without reworking large swaths of code.</li>
+</ul>
+<p>How to make small diffs in practice:</p>
+<ul>
+<li>Feature flags. Hide unfinished features behind flags. Merge vertical slices that are safe by default.</li>
+<li>Strangler pattern. For large refactors, create a new module and migrate callers gradually instead of big-bang changes.</li>
+<li>Prep PRs. Land mechanical changes (renames, formatting, moving files) before behavior changes.</li>
+<li>Commit discipline. Each commit should do one thing and pass tests. This makes reviews and rollbacks easier.</li>
+</ul>
+<p>When a large change is truly unavoidable, increase the structure:</p>
+<ul>
+<li>Provide a clear high-level summary with a diagram or pseudo-code.</li>
+<li>Break the diff into labeled commits with focused messages.</li>
+<li>Call out the hotspots and ask for targeted attention.</li>
+<li>If possible, have an early, synchronous walkthrough with a reviewer.</li>
+</ul>
+<h2>Keep It Human</h2>
+<p>Code review is a social activity in service of a technical goal. The tone you set and the habits you build matter.</p>
+<p>As a reviewer, respect the author’s time. Avoid drive-by comments. If you leave a dozen nitpicks, consider whether a quick pairing session would be faster and kinder. Be predictable: if you care about a standard, document it and apply it consistently.</p>
+<p>As an author, make it easy to help you. Provide the context you would want if you were reviewing. Accept that rework is part of engineering, not a personal failure. If you are stuck in a back-and-forth, suggest a short call.</p>
+<p>Both roles share the same north star: keep the codebase healthy and the team effective. When you are unsure what to do, ask what will reduce risk, clarify intent, and help the next person move faster. If your comment or decision serves those goals, you are doing review right.</p></article>
+    
+    <div class="pagenav">
+      <span></span>
+      <a href="lesson-preparing-and-submitting-reviews-set-the-stage-for-success.html"><span class="dir">Next &rarr;</span>Preparing and Submitting Reviews: Set the Stage for Success</a>
+    </div>
+  </div>
+</body>
+</html>

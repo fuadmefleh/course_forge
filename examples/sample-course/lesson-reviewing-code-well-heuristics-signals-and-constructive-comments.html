@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reviewing Code Well: Heuristics, Signals, and Constructive Comments - Effective Code Review: A Practical Guide</title>
+  <meta name="description" content="A practical, repeatable code review process from context to comments, with risk cues, test asks, and tone that helps teams ship safer code." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #24292f;
+      line-height: 1.6;
+    }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+    .back { display: inline-block; font-size: 0.85rem; color: #57606a; margin-bottom: 24px; }
+    .hero-img { width: 100%; border-radius: 12px; margin-bottom: 32px; display: block; }
+    h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 12px; }
+    .subtitle { font-size: 1.1rem; color: #57606a; margin-bottom: 32px; }
+    .meta { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #2563eb; margin-bottom: 8px; }
+    article h2 { font-size: 1.4rem; margin: 2em 0 0.6em; }
+    article h3 { font-size: 1.15rem; margin: 1.6em 0 0.5em; }
+    article p, article ul, article ol { margin-bottom: 1em; }
+    article ul, article ol { padding-left: 1.4em; }
+    article blockquote {
+      border-left: 3px solid #2563eb;
+      padding: 0.2em 1.2em;
+      margin: 1.5em 0;
+      color: #444;
+      font-style: italic;
+    }
+    article figure { margin: 2em 0; }
+    article figure img { width: 100%; border-radius: 10px; display: block; }
+    article figcaption { font-size: 0.85rem; color: #57606a; margin-top: 8px; }
+    article pre { background: #f6f8fa; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    .lesson-list { list-style: none; margin-top: 24px; }
+    .lesson-card {
+      display: block;
+      border: 1px solid #e2e2e2;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    .lesson-card:hover { border-color: #2563eb; text-decoration: none; }
+    .lesson-card .num { font-size: 0.75rem; color: #2563eb; margin-bottom: 4px; display: block; }
+    .lesson-card .excerpt {
+      color: #57606a;
+      font-size: 0.9rem;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .pagenav { display: flex; justify-content: space-between; gap: 16px; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e2e2; }
+    .pagenav a { display: block; border: 1px solid #e2e2e2; border-radius: 10px; padding: 12px 16px; font-size: 0.9rem; max-width: 48%; }
+    .pagenav a:hover { border-color: #2563eb; text-decoration: none; }
+    .pagenav .dir { font-size: 0.7rem; text-transform: uppercase; color: #57606a; display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Effective Code Review: A Practical Guide</a>
+    
+    <span class="meta">Part 3 of 4 &middot; 27 min read</span>
+    <img class="hero-img" src="images/reviewing-code-well-heuristics-signals-and-constructive-comments-hero.png" alt="Reviewing Code Well: Heuristics, Signals, and Constructive Comments" />
+    <h1>Reviewing Code Well: Heuristics, Signals, and Constructive Comments</h1>
+    <article><h2>Why a repeatable review process matters</h2>
+<p>Good reviews are not about catching every defect. They are about raising the quality of changes in a predictable, respectful way, and helping the team move faster over time. A repeatable process keeps your attention on what matters, avoids nitpicking, and makes your feedback easier to act on.</p>
+<p>A solid process answers three questions:</p>
+<ul>
+<li>What do I look at first, and why?</li>
+<li>How do I decide what to block and what to suggest?</li>
+<li>How do I write comments that people can use?</li>
+</ul>
+<p>This lesson walks through a practical sequence you can apply to any code change, the signals that should make you slow down or ask for help, and the tone and structure of comments that lead to improvement without friction.</p>
+<blockquote>
+<p>Review the change the author made, not the code you wish they had written.</p>
+</blockquote>
+<h2>Start with context before reading code</h2>
+<p>Context helps you review the right thing. Without it, it is easy to argue over style while missing a broken assumption or a mismatched interface. Before diving into lines of code:</p>
+<ul>
+<li><p>Read the change description. Look for the problem statement, scope, what is out of scope, and how the author validated the change. If the description is thin, ask for more context before reviewing in detail. Example: “What user flow is this affecting, and what are the acceptance criteria?”</p>
+</li>
+<li><p>Skim the diff map. Most tools show a list of files and an approximate size of changes. Use this to plan where to start and to assess risk. Example: “One migration, two model files, one controller, a dozen test files.” That suggests data shape changes, so you will look for migration safety and test coverage.</p>
+</li>
+<li><p>Check linked issues, designs, and specs. If there is a ticket number, click it. If the code references a design doc, open it. You do not need to read every word, but you should verify alignment. Example: “Spec says 5 percent throttle; the code sets 50 percent.”</p>
+</li>
+<li><p>Run the code or tests if needed. If the change affects behavior you can observe quickly (a CLI, an endpoint, a small UI), run it locally or in a preview environment. If the author linked to a staging URL or included a test plan, follow it. If it will take more than a few minutes, timebox and decide whether your run will uncover value or if you can defer to automated checks or a later pass.</p>
+</li>
+<li><p>Scan for risk upfront. Are there migrations, security-related files, shared libraries, or public APIs changed? This helps you choose your review order and depth.</p>
+</li>
+</ul>
+<p>Build a simple habit: write a quick intent check before detailed line notes. For example: “I understand this change aims to streamline OAuth token refresh by caching tokens per user session and adding retry on 401. I plan to review the interface of TokenCache first, then tests, then performance. Let me know if I missed anything.” This aligns expectations and invites correction early.</p>
+<h2>A practical review order</h2>
+<p>Jumping into the first file often leads to scattered comments. A consistent order makes your review faster and clearer. A reliable sequence:</p>
+<ol>
+<li>Design and interfaces. Are modules and functions arranged sensibly? Does the change align with the architecture and API boundaries? Are names and responsibilities clear?</li>
+<li>Correctness and tests. Does the code do what the description claims? Do tests cover the main path and failure modes? Are tests readable and reliable?</li>
+<li>Edge cases. What happens at boundary conditions? Empty inputs, timeouts, missing permissions, retries, idempotency.</li>
+<li>Security and performance. Any injection risks, unsafe parsing, exposed secrets, or slow paths introduced by the change? Memory and concurrency concerns.</li>
+<li>Readability and maintainability. Naming, structure, duplication, comments, and adherence to style guides.</li>
+</ol>
+
+<p>This order moves from big decisions to fine details. If the design is off, there is no point debating variable names. If correctness is shaky, performance nits are premature.</p>
+<p>Here is what this looks like in practice:</p>
+<ul>
+<li><p><strong>Design and interfaces example:</strong></p>
+<ul>
+<li>Original: a feature flag check is baked into a low-level database helper. That couples data access to feature rollout policy.</li>
+<li>Comment: “Can we keep rollout logic at the service layer and pass a boolean intent into the repository? This keeps the repository reusable and testable.”</li>
+</ul>
+</li>
+<li><p><strong>Correctness and tests example:</strong></p>
+<ul>
+<li>The change adds retry-on-timeout but only tests the success case.</li>
+<li>Comment: “Do we have a test that simulates timeout on the first attempt and verifies backoff timing and max attempts?”</li>
+</ul>
+</li>
+<li><p><strong>Edge cases example:</strong></p>
+<ul>
+<li>A new endpoint accepts an optional filter but does not validate unknown filters.</li>
+<li>Comment: “What should happen if clients send an unsupported filter? Should we return 400 to avoid silent ignore?”</li>
+</ul>
+</li>
+<li><p><strong>Security and performance example:</strong></p>
+<ul>
+<li>A log line includes request headers. That might leak Authorization.</li>
+<li>Comment: “Headers can include secrets. Can we mask or whitelist instead of dumping all headers?”</li>
+</ul>
+</li>
+<li><p><strong>Readability example:</strong></p>
+<ul>
+<li>A 60-line function mixes parsing, validation, and I/O.</li>
+<li>Comment: “Could we split parseConfig, validateConfig, and applyConfig? It should make testing and future changes easier.”</li>
+</ul>
+</li>
+</ul>
+<h2>Spotting risk signals early</h2>
+<p>Not every change deserves the same depth. Risk signals help you decide when to slow down, escalate, or ask for the change to be split.</p>
+<ul>
+<li><p>Very large diffs. A 2,000-line PR across 40 files is easy to misreview. It often hides unrelated changes. Ask to split by concern. Example comment: “This includes API changes, UI refactor, and test infra updates. Could we separate API contract changes into their own PR and keep this one to UI behavior? That will make test review and rollout safer.”</p>
+</li>
+<li><p>Low or missing tests. A change to core logic with no new tests is risky. Concrete approach: check coverage of new branches. Example: “parseDate now handles time zones and DST; I do not see tests for DST transitions or invalid offsets. Could you add cases for ‘2024-03-10 02:30’ and ‘UTC+14’?”</p>
+</li>
+<li><p>Duplicated code. Copy-paste across modules creates maintenance risk. Example: “The validation for email appears in three handlers. Can we centralize to validateEmail in common/validators and import it here? That will reduce drift.”</p>
+</li>
+<li><p>Deep nesting and complexity. Five levels of if/else with multiple early returns is a bug magnet. Example: “This function has cyclomatic complexity 18. Could we extract the discount type handlers into a map of strategies to flatten control flow?”</p>
+</li>
+<li><p>Undocumented changes. Files touched without explanation, such as config toggles, CI scripts, or security settings, can have outsized impact. Example: “I see we changed S3 bucket policy to public-read. Can you explain the intent and add a note to the rollout plan with a verification step?”</p>
+</li>
+</ul>
+<p>Other subtle signals:</p>
+<ul>
+<li>Editing generated files. Did the author commit build artifacts or lockfiles by hand?</li>
+<li>Changing shared interfaces. Are there downstream consumers notified or tested?</li>
+<li>Removing logs or metrics. Does this affect observability or alerts?</li>
+</ul>
+<p>When you see two or more signals together (e.g., large diff and low tests), treat it as high risk. Pause, align on scope, and decide on a plan: split, add tests first, stage rollout behind a flag, or involve a second reviewer.</p>
+<h2>Run code and tests when it adds value</h2>
+<p>You do not need to run every change locally. Be selective:</p>
+<ul>
+<li>Run if behavior is hard to reason about from code alone, or if the author requests specific validation steps.</li>
+<li>Run if UI or CLI flows are central to the change, and a quick smoke test can catch obvious miswires.</li>
+<li>Run if you suspect environment or config issues that tests would miss.</li>
+</ul>
+<p>Tips:</p>
+<ul>
+<li>Reproduce the author’s steps. If the description lists a test plan, follow it. Note any missing instructions or surprises.</li>
+<li>Avoid yak shaving. If setup is taking too long, stop and leave a comment: “I attempted to run the staging environment but hit missing env var XYZ. Can you document setup steps or add a check that fails fast?”</li>
+<li>Capture empirical feedback. “When clicking Save, I receive a 500; logs show NullPointer on missing profile.id. Likely related to new optional chain paths.”</li>
+</ul>
+<p>Your goal is not to be QA. You are adding a small, fast feedback loop that complements unit and integration tests.</p>
+<h2>Deepening the design and interfaces pass</h2>
+<p>At the top of your review order, focus on the shape of the change.</p>
+<p>Questions to ask:</p>
+<ul>
+<li>Does the change introduce a new abstraction? Is it the right level? Does it leak details?</li>
+<li>Are public methods minimal and named for intent rather than mechanism?</li>
+<li>Are cross-module dependencies moving in the right direction, or is a lower layer calling up into a higher one?</li>
+<li>Is feature flagging or configuration handled at the edges rather than deep in helpers?</li>
+<li>Is the change reversible if it needs to be rolled back?</li>
+</ul>
+<p>Example interface critique:</p>
+<ul>
+<li>Before:
+<ul>
+<li>A function createUser(name, email, sendWelcomeEmail) where the boolean toggles side effects.</li>
+</ul>
+</li>
+<li>After suggestion:
+<ul>
+<li>Separate createUser(userData) from a decoupled sendWelcomeEmail(userId). Or accept an options object with defaults: createUser(userData, { sendWelcomeEmail: false }). This keeps the core action pure and testable.</li>
+</ul>
+</li>
+</ul>
+<p>Public API consideration:</p>
+<ul>
+<li>If a shared library changes a function signature, look for versioning and deprecation notes. Example: “Renaming fetchUser to getUser breaks downstream. Can we add a deprecated alias and log a warning for one release cycle? Include the migration snippet in CHANGELOG.”</li>
+</ul>
+<p>Diagramming helps. A quick sketch in a comment clarifies intent:</p>
+<ul>
+<li>“Current flow: Controller → Service A → Service B → Repo”</li>
+<li>“Proposed: Controller → Orchestrator → Service A/B → Repo”<br />Encourage the author to add an ASCII diagram or a short doc if the design changed meaningfully.</li>
+</ul>
+<h2>Checking correctness and tests</h2>
+<p>Once the design looks sound, verify that the code does what it claims.</p>
+<ul>
+<li>Trace the main path. Pick a typical input and follow it through. Write down assumptions you see. Example: “Assumes user.locale is set, but we do not default it. What happens for new users?”</li>
+<li>Look for unchecked return values and swallowed errors. Example: “We catch any exception and return 200. Should failed payment return 4xx with a specific error code?”</li>
+<li>Verify idempotency where required. Retrying webhooks or payments should not double-charge or duplicate work.</li>
+<li>Confirm boundary conditions in tests. Tests should cover:
+<ul>
+<li>Success path</li>
+<li>Invalid input</li>
+<li>Error from dependency (timeout, 500)</li>
+<li>Empty or null data</li>
+<li>Concurrency if relevant</li>
+</ul>
+</li>
+</ul>
+<p>Concrete test ask with snippet:</p>
+<p>Example (JavaScript):</p>
+<pre><code>it("retries on 429 with exponential backoff", async () =&gt; {
+  mockApi.onFirstCall().rejects(rateLimitError());
+  mockApi.onSecondCall().resolves({ ok: true });
+  const start = Date.now();
+  const result = await fetchWithRetry("/data");
+  const elapsed = Date.now() - start;
+  expect(result.ok).toBe(true);
+  expect(elapsed).toBeGreaterThanOrEqual(100); // first backoff
+});
+</code></pre>
+<p>If you cannot find such tests, ask for them. If the author argues that existing tests already cover the behavior, ask for pointers to the specific tests and what cases they cover. That teaches both of you where coverage lives and prevents over-testing or duplication.</p>
+<p>Call out flaky patterns:</p>
+<ul>
+<li>Sleeping for fixed time in tests instead of waiting on events or signals</li>
+<li>Over-mocking internals instead of using public interfaces</li>
+<li>Tests that assert on logs instead of outcomes</li>
+</ul>
+<p>Encourage naming tests by behavior rather than method name. “returns 404 when order not found” is clearer than “testGetOrderNotFound.”</p>
+<h2>Probing edge cases</h2>
+<p>Edge cases are often where bugs hide. Think in categories:</p>
+<ul>
+<li>Input shape and size. Empty arrays, nulls, very long strings, special characters, unexpected enums.</li>
+<li>Time-related. DST transitions, leap years, time zones, clocks moving backward.</li>
+<li>Resource limits. Large payloads, many concurrent requests, memory growth on large loops.</li>
+<li>Permission and roles. Unauthorized access, partial access, feature flags off.</li>
+<li>Network. Retries, timeouts, idempotency, partial failures.</li>
+</ul>
+<p>Targeted questions:</p>
+<ul>
+<li>“What happens if the webhook fires twice for the same event? Do we dedupe by event id?”</li>
+<li>“If the batch contains 0 items, do we no-op or write an empty record?”</li>
+<li>“If a user lacks permission to view subgroup data, do we filter results or reject the request?”</li>
+</ul>
+<p>Suggest quick cases to add:</p>
+<ul>
+<li>“Add test: createUser with email uppercase, ensure stored normalized lowercase.”</li>
+<li>“Add test: processBatch with an item that fails; verify we skip and continue vs fail all.”</li>
+</ul>
+<h2>Security and performance quick checks</h2>
+<p>You may not be the security or performance expert, but a light pass catches common issues.</p>
+<p>Security checklist:</p>
+<ul>
+<li>Input validation and output encoding. Avoid directly inserting user input into SQL, HTML, shell commands.</li>
+<li>Authentication and authorization checks. Ensure checks align with the feature’s sensitive actions.</li>
+<li>Secrets handling. No secrets in code, logs, or error messages.</li>
+<li>Dependency risks. If a new library is added, is it maintained and licensed correctly? Is its use minimal?</li>
+<li>Data exposure. New fields in API responses or logs, PII masked.</li>
+</ul>
+<p>Example comments:</p>
+<ul>
+<li>“We pass user-provided file names to the OS. Can we sanitize or restrict to a safe whitelist?”</li>
+<li>“We catch ‘any’ error and return 404. That might hide real server errors; could we map known errors and return 500 otherwise?”</li>
+</ul>
+<p>Performance checklist:</p>
+<ul>
+<li>N+1 queries. Especially in loops or per-item calls.</li>
+<li>Inefficient data structures. Repeated linear searches when a map would do.</li>
+<li>Unbounded growth. Caches or lists that never evict, accumulating state.</li>
+<li>Hot path changes. Code in request handlers, tight loops, or rendering cycles.</li>
+<li>Logging volume. Debug logs in hot paths can flood storage.</li>
+</ul>
+<p>Practical ask with snippet:</p>
+<p>Example (Python):</p>
+<pre><code># Current
+users = [db.get_user(id) for id in ids]  # N queries
+
+# Suggestion
+users = db.get_users_bulk(ids)  # 1 query
+</code></pre>
+<p>If you suspect a hotspot, ask for a quick measurement:</p>
+<ul>
+<li>“This runs per request. Could you benchmark with 10k items and post rough timings?”</li>
+<li>“Can we add a histogram metric for handler latency to verify in staging?”</li>
+</ul>
+<h2>Readability and maintainability</h2>
+<p>Once you are satisfied with design, correctness, and risks, do a pass for clarity.</p>
+<p>Focus points:</p>
+<ul>
+<li>Naming conveys intent. Prefer “expiresAt” over “t,” “activeDiscounts” over “arr.”</li>
+<li>Functions are single-purpose and not too long. Extract helpers when a function mixes parsing, validation, and side effects.</li>
+<li>Comments explain why, not what. Avoid stating the obvious; note non-obvious constraints or tradeoffs.</li>
+<li>Consistency with project style. If there is a guideline, reference it rather than personal taste.</li>
+<li>Duplicated logic is consolidated. If two functions differ only slightly, consider unifying.</li>
+<li>Tests are readable. Arrange tests with clear setup, act, assert sections.</li>
+</ul>
+<p>Concrete examples:</p>
+<ul>
+<li><p>Instead of:</p>
+<pre><code>// increment
+c = c + 1;
+</code></pre>
+<p>Use:</p>
+<pre><code>// We retry up to 3 times to handle transient 5xx errors
+attempts += 1;
+</code></pre>
+</li>
+<li><p>Instead of a chain of booleans:</p>
+<pre><code>if (isAdmin &amp;&amp; !isSuspended &amp;&amp; (age &gt; 18 || hasConsent)) { ... }
+</code></pre>
+<p>Extract:</p>
+<pre><code>const canAccessRestricted = isAllowedRestrictedAccess(user);
+if (canAccessRestricted) { ... }
+</code></pre>
+</li>
+</ul>
+<p>As a reviewer, avoid policing personal style. Tie comments to clarity, maintainability, and team standards.</p>
+<h2>Writing constructive comments that land</h2>
+<p>The best comments help the author improve the change now and their future work. Your tone and structure matter as much as your technical content.</p>
+<p>Principles:</p>
+<ul>
+<li>Ask questions before asserting. Start with curiosity to uncover intent: “What tradeoff led you to choose X over Y?” This reduces defensiveness and may reveal constraints you missed.</li>
+<li>Propose alternatives, not just problems. Offer a concrete path forward when possible.</li>
+<li>Separate blocking from suggestions. Make it easy for the author to know what must change versus what can be deferred.</li>
+<li>Include praise. Positive feedback reinforces good patterns and makes tough comments easier to digest.</li>
+</ul>
+
+<p>Comment patterns with examples:</p>
+<ul>
+<li><p><strong>Clarifying question:</strong></p>
+<ul>
+<li>“I see we store retry counts in memory. How do we handle process restarts? Would a persisted counter be safer for jobs that must not exceed N retries?”</li>
+</ul>
+</li>
+<li><p><strong>Suggestion with rationale:</strong></p>
+<ul>
+<li>“Consider using a map keyed by userId instead of scanning this array each time. This reduces lookup from O(n) to O(1), which matters on the hot path.”</li>
+</ul>
+</li>
+<li><p><strong>Blocking with clear reason:</strong></p>
+<ul>
+<li>“Blocking: The migration drops a column without a backfill or rollback plan. We need a two-step migration with deploy N adding new column + backfill, deploy N+1 removing the old column after verifying reads are switched.”</li>
+</ul>
+</li>
+<li><p><strong>Non-blocking suggestion:</strong></p>
+<ul>
+<li>“Nit: We can rename flag to isTruncated for clarity. Non-blocking.”</li>
+</ul>
+</li>
+<li><p><strong>Praise pointing to reuse:</strong></p>
+<ul>
+<li>“The validatePayload helper is clean and self-contained. Nice job isolating side effects, it made the review straightforward.”</li>
+</ul>
+</li>
+</ul>
+<p>Avoid vague comments:</p>
+<ul>
+<li>Instead of “This is confusing,” say “I had to jump between three files to follow the order creation flow. Could we centralize orchestration in OrderService so the controller is thin and tests can assert on one place?”</li>
+</ul>
+<p>Time-saving templates you can adapt:</p>
+<ul>
+<li>Intent check: “My understanding is X. I plan to review Y and Z. Please correct me if I missed scope.”</li>
+<li>Blocking marker: “Blocking due to [reason]. Proposal: [concrete fix].”</li>
+<li>Alternative: “Another option: [snippet], which [benefit]. Open to other approaches.”</li>
+<li>Praise: “Strong [specific aspect]. Consider adding this pattern to the guidelines.”</li>
+</ul>
+<p>Tone cues:</p>
+<ul>
+<li>Use “we” for shared goals. “How can we ensure idempotency” reads better than “You did not make it idempotent.”</li>
+<li>Prefer verbs that invite action. “Could we add a test for negative balance” instead of “No test for negatives.”</li>
+<li>Keep comments short and focused. If a topic is complex, summarize and suggest a short call or doc rather than packing a thread with back-and-forth.</li>
+</ul>
+<p>When to escalate from comments to conversation:</p>
+<ul>
+<li>If a design disagreement has more than a couple of thread replies.</li>
+<li>If tone seems to degrade in text.</li>
+<li>If a change touches cross-team boundaries.</li>
+</ul>
+<p>Offer to summarize agreements back into the PR description for future readers.</p>
+<h2>Examples of constructive comments on small diffs</h2>
+<p>Small, focused diffs make it easy to suggest concrete changes with snippets.</p>
+<p><strong>Example 1: replacing magic numbers</strong></p>
+<p>Diff:</p>
+<pre><code>- if (attempts &gt; 3) { lockAccount(userId); }
++ if (attempts &gt; 3) { lockAccount(userId); }
+</code></pre>
+<p>Comment:</p>
+<ul>
+<li>“Consider extracting MAX_LOGIN_ATTEMPTS = 3 to config or a constant. That makes it easier to tune without code changes and clarifies intent.”</li>
+</ul>
+<p>Example code offer:</p>
+<pre><code>const MAX_LOGIN_ATTEMPTS = 3;
+// ...
+if (attempts &gt; MAX_LOGIN_ATTEMPTS) lockAccount(userId);
+</code></pre>
+<p><strong>Example 2: pointing to a guideline</strong></p>
+<p>Context: Team style guide prefers early returns over deep nesting.</p>
+<p>Diff:</p>
+<pre><code>if (user) {
+  if (user.isActive()) {
+    process(user);
+  }
+}
+</code></pre>
+<p>Comment with reference:</p>
+<ul>
+<li><p>“Our style guide recommends early returns to reduce nesting. See ‘Early exits’ section. Suggest:”</p>
+<pre><code>if (!user) return;
+if (!user.isActive()) return;
+process(user);
+</code></pre>
+</li>
+</ul>
+<p><strong>Example 3: security precaution</strong></p>
+<p>Diff:</p>
+<pre><code>logger.info(`User ${userId} failed login: ${reason}`);
+</code></pre>
+<p>Comment:</p>
+<ul>
+<li>“reason may contain PII or hints useful to attackers. Suggest logging reason code (e.g., INVALID_PASSWORD) instead of raw text. We can keep detailed reason in a secure audit log.”</li>
+</ul>
+<p><strong>Example 4: refactor for testability</strong></p>
+<p>Diff:</p>
+<pre><code>function sendReceipt(orderId) {
+  const res = fetch(`.../orders/${orderId}`);
+  // ...
+}
+</code></pre>
+<p>Comment:</p>
+<ul>
+<li><p>“Directly calling fetch in business logic makes testing harder. Consider injecting an httpClient, so tests can pass a mock. For example:”</p>
+<pre><code>function sendReceipt(orderId, { httpClient = fetch } = {}) { /* ... */ }
+</code></pre>
+</li>
+</ul>
+<h2>Using references to anchor feedback</h2>
+<p>When you cite a rule, link to it. This avoids subjective debates and teaches team norms.</p>
+<p>Sources to reference:</p>
+<ul>
+<li>Team style guide sections (naming, error handling, testing patterns)</li>
+<li>Architecture decision records (ADRs) for module boundaries or tech choices</li>
+<li>Security guidelines (secrets handling, auth patterns)</li>
+<li>Performance playbooks (caching, batching, logging)</li>
+<li>Language or framework docs (official recommendations)</li>
+</ul>
+<p>Concrete pattern:</p>
+<ul>
+<li>“Per ADR-017, repositories should not depend on services. The new Repo calls AlertService. Could we invert this dependency by moving alerting to the service layer?”</li>
+</ul>
+<p>If a reference does not exist, propose creating one. “We have discussed early returns in multiple PRs. Shall we add a short section to the style guide? I can draft it based on this example.”</p>
+<h2>Managing time and energy in reviews</h2>
+<p>Reviews are thinking work. Attention fades. Manage it like any other limited resource.</p>
+<ul>
+<li>Timebox sessions. Set 30–45 minute blocks. When the timer ends, either wrap or take a short break. Long stretches lead to sloppy comments and missed risks.</li>
+<li>Start with high-impact parts. Use the diff map to pick core files or public interfaces first. Leave cosmetics for the end, or not at all.</li>
+<li>Avoid fatigue-driven nitpicks. If you notice yourself commenting on commas or small spacing, you might be tired. Stop, or leave one summary note: “Let’s run the formatter and address remaining nits after main feedback.”</li>
+<li>Batch similar comments. Instead of repeating “rename idx to index” 12 times, write one general comment and ask the author to apply it across the PR.</li>
+<li>Ask to split large changes. If your first pass suggests the PR is too large to review thoroughly, say so early. “This is 1,800 lines across 25 files. To give it the attention it needs, could we split migrations and feature logic into separate PRs?”</li>
+<li>Use checklists. A small, personal checklist reduces cognitive load. Example:
+<ul>
+<li>Read description</li>
+<li>Skim file list</li>
+<li>Design and interfaces</li>
+<li>Correctness and tests</li>
+<li>Edge cases</li>
+<li>Security and performance</li>
+<li>Readability</li>
+<li>Summary comment and labels</li>
+</ul>
+</li>
+</ul>
+<p>Balance speed and quality:</p>
+<ul>
+<li>If the change is low risk (docs, comments, small refactor), skim and approve quickly.</li>
+<li>If it is medium risk, do the full process but keep comments concise.</li>
+<li>If it is high risk, go deeper, ask for tests upfront, and get a second reviewer.</li>
+</ul>
+<h2>Dealing with large or messy changes</h2>
+<p>Sometimes you face a PR that is too big or mixes many concerns. Here is a constructive path forward:</p>
+<ul>
+<li><p>Name the problem neutrally. “This PR tackles feature A, refactors module B, and updates CI. Reviewing all at once makes it hard to verify each piece safely.”</p>
+</li>
+<li><p>Propose a split plan:</p>
+<ul>
+<li>PR 1: Test-only safety net for existing behavior (if feasible)</li>
+<li>PR 2: Infrastructure changes (CI, config)</li>
+<li>PR 3: Pure refactor with no behavior change</li>
+<li>PR 4: Feature implementation behind a flag</li>
+<li>PR 5: Flag flip and cleanup</li>
+</ul>
+</li>
+<li><p>Suggest mechanical separation. “Can you send a formatter-only commit separately? That will make the diff signal clearer.”</p>
+</li>
+<li><p>Use labels or draft state to stage review. “Mark the PR as draft until tests land. I will review design now and return for correctness once tests are added.”</p>
+</li>
+<li><p>Encourage incremental merges. “Merge the non-risky refactors first to reduce the diff. Then the feature PR will be smaller, and test diffs clearer.”</p>
+</li>
+<li><p>Offer to pair. For complex rewrites, a short call to align on structure can save days of back-and-forth.</p>
+</li>
+</ul>
+<h2>Calibrating severity: blocking vs suggestions</h2>
+<p>Be explicit about what gates approval. Ambiguity causes churn.</p>
+<ul>
+<li>Mark blocking items at the top in a summary comment. “Blocking: 1) missing test for retry backoff, 2) unsafe logging of Authorization header.”</li>
+<li>Use a consistent tag in line comments. Prefix with “Blocking:” or “Non-blocking:” so authors can filter and address accordingly.</li>
+<li>Limit blocking to issues that risk correctness, safety, or maintainability at scale.</li>
+<li>Move stylistic or minor improvements to suggestions. If they are important, link to a guideline and ask to follow it globally, not just in the PR.</li>
+</ul>
+<p>Example summary:</p>
+<ul>
+<li>“Summary:
+<ul>
+<li><strong>Blocking:</strong>
+<ul>
+<li>Add test for DST boundary in parseSchedule</li>
+<li>Sanitize headers before logging</li>
+</ul>
+</li>
+<li><strong>Suggestions:</strong>
+<ul>
+<li>Extract calculateDiscount into its own module</li>
+<li>Rename fn run to process</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>“Once the two blocking items are addressed, I am comfortable approving.”</li>
+</ul>
+<h2>Examples of asking questions, proposing alternatives</h2>
+<p>Sometimes the best review nudge is a question that points to a better path.</p>
+<ul>
+<li><p>Question opening a design door:</p>
+<ul>
+<li>“What led you to choose inheritance here instead of composition? Could composition reduce the coupling to BaseProcessor?”</li>
+</ul>
+</li>
+<li><p>Short alternative with benefit:</p>
+<ul>
+<li><p>“Alternative: use a strategy map:”</p>
+<pre><code>const handlers = { flat: flatDiscount, tiered: tieredDiscount };
+handlers[type](...args);
+</code></pre>
+<p>This removes the switch and makes adding a new type simpler.</p>
+</li>
+</ul>
+</li>
+<li><p>Question surfacing a rollout concern:</p>
+<ul>
+<li>“If we roll this out gradually, how do we handle data created before the migration? Do we need a read path that supports both schemas during rollout?”</li>
+</ul>
+</li>
+<li><p>Alternative for safer migration:</p>
+<ul>
+<li>“Two-step migration: add new column, dual-write, backfill in background, switch reads, then drop old column in a later PR. This reduces downtime and rollback complexity.”</li>
+</ul>
+</li>
+</ul>
+<h2>Using examples and concrete snippets in comments</h2>
+<p>Concrete changes carry more weight than abstract advice. When suggesting improvements:</p>
+<ul>
+<li>Show a minimal diff. Keep it small and focused on the idea.</li>
+<li>Respect the author’s style and context. Keep changes close to what is already there.</li>
+<li>Clarify what problem the snippet solves.</li>
+</ul>
+<p>Example: replacing try/catch sprawl</p>
+<p>Before:</p>
+<pre><code>try {
+  const user = await getUser(id);
+  if (!user) throw new Error("no user");
+  const profile = await getProfile(user.profileId);
+  if (!profile) throw new Error("no profile");
+  // ...
+} catch (e) {
+  logger.error(e);
+  return res.status(500).send("error");
+}
+</code></pre>
+<p>Suggestion:</p>
+<pre><code>const user = await getUserOr404(id);
+const profile = await getProfileOr404(user.profileId);
+// ...
+</code></pre>
+<p>Comment:</p>
+<ul>
+<li>“By moving not-found handling into helpers that return 404, we keep the main flow straight and avoid masking 404s as 500s.”</li>
+</ul>
+<p>Point to a pattern:</p>
+<ul>
+<li>“We have getOrCreate in UserRepo that follows this pattern. Using it here would reduce duplicate logic.”</li>
+</ul>
+<h2>Bringing in external references judiciously</h2>
+<p>Citing external sources can help, but avoid overloading the author.</p>
+<ul>
+<li>Link to a specific section, not a long document. Quote the relevant lines.</li>
+<li>Align with team norms. If an external best practice conflicts with local constraints, acknowledge that.</li>
+<li>Offer to adapt the reference into a local guide. “This testing table pattern maps well to our case. If we like it, I can add a short example to our docs.”</li>
+</ul>
+<p>Example reference comment:</p>
+<ul>
+<li>“OWASP recommends output encoding for any user-provided data inserted into HTML. See ‘XSS Prevention Cheat Sheet Step 5’. In our template, we are interpolating raw user.bio. Suggest using the escape helper: {{ escape(user.bio) }}.”</li>
+</ul>
+<h2>Closing the loop: summarizing and approving</h2>
+<p>After leaving line comments, add a short summary that:</p>
+<ul>
+<li>Restates your understanding of intent</li>
+<li>Highlights any blocking items</li>
+<li>Commends what is strong about the change</li>
+<li>Notes next steps or who else should review if needed</li>
+</ul>
+<p>Example:</p>
+<ul>
+<li>“Intent: add retry with exponential backoff for 5xx responses on fetchData. Design looks good; retry logic isolated in RetryPolicy. Blocking: add a test for jitter and ensure we cap attempts at 5. Non-blocking: rename delayMs to backoffMs and add docstring with formula. Strong work on isolating policy from transport.”</li>
+</ul>
+<p>When the author addresses feedback:</p>
+<ul>
+<li>Re-review only the updated areas if possible.</li>
+<li>Acknowledge fixes explicitly. “Thanks for adding the DST tests and masking headers. Approving.”</li>
+<li>If a suggestion is deferred, agree on a ticket or follow-up PR. “Created ticket DEV-123 to track refactor to strategy map; let us not block this feature on it.”</li>
+</ul>
+<h2>Handling disagreements constructively</h2>
+<p>You will disagree. Keep it professional and focused on outcomes.</p>
+<ul>
+<li>Seek shared goals. “We both want a safe rollout and maintainable code. Given that, which option reduces risk the most in the next two weeks?”</li>
+<li>Offer tradeoffs, not ultimatums. “Option A is simpler now but risks a data migration later; Option B is more work now but keeps the repo pure. My lean: B, because this repo is used by three services.”</li>
+<li>Bring data. “We saw incidents last quarter from tight coupling in repos. Keeping repos pure reduced review time in the payments team.”</li>
+<li>Defer to guidelines when they exist. If none exist, propose writing one after the immediate decision.</li>
+<li>Know when to accept. If both options are valid and time is tight, prefer unblocking with a follow-up task for improvements.</li>
+</ul>
+<p>If the thread grows long, suggest a short call. Afterward, summarize decisions and rationale in the PR for posterity.</p>
+<h2>Reviewing non-code artifacts: configs, migrations, infra</h2>
+<p>Many risky changes live outside pure code.</p>
+<ul>
+<li>Config changes. Check defaults, validation, and rollout plan. “New feature flag default is true in production. Is that intended? Should we default to false and flip per environment?”</li>
+<li>Database migrations. Look for backward compatibility, locking risks, and rollback strategy. “Adding a NOT NULL column without default will lock writes. Suggest adding with default, backfilling in batches.”</li>
+<li>Infrastructure as code. Confirm drift, permissions, and blast radius. “This policy grants s3:ListAllMyBuckets. Is that broader than required? Could we scope to the specific bucket ARN?”</li>
+<li>CI/CD scripts. Verify secrets, caching, and failure modes. “We added npm ci without cache restore; build times will spike. Can we restore cache keyed by lockfile hash?”</li>
+<li>Documentation. Ensure user-facing changes have docs updates. “We added a new CLI flag; can we update the README and example commands?”</li>
+</ul>
+<p>Ask authors to include a test plan or verification steps for these changes. For migrations, request a dry run on staging and metrics to watch during rollout.</p>
+<h2>Practical security and performance questions to copy-paste</h2>
+<p>When in doubt, these quick prompts surface issues fast:</p>
+<p>Security:</p>
+<ul>
+<li>“Are all inputs validated at the boundary?”</li>
+<li>“Could any logged data include PII or secrets?”</li>
+<li>“Are authz checks at the right layer and consistent with policy?”</li>
+<li>“Does this introduce a new dependency? Is it vetted?”</li>
+<li>“Could error messages leak sensitive details?”</li>
+</ul>
+<p>Performance:</p>
+<ul>
+<li>“Any N+1 patterns or per-item remote calls?”</li>
+<li>“Is this on a hot path? If so, any quick benchmark?”</li>
+<li>“Do we allocate unnecessary objects in loops?”</li>
+<li>“Is there unbounded growth in in-memory state?”</li>
+<li>“Any expensive logs or debug statements in production paths?”</li>
+</ul>
+<h2>Leveling up readability: what to look for</h2>
+<p>Beyond style, readability is about telling a clear story.</p>
+<ul>
+<li>Structure code so the main path is first, details later. Early returns and helpers make this possible.</li>
+<li>Prefer data structures that match the domain. Use named records or small value objects instead of raw tuples or arrays.</li>
+<li>Keep tests narrative. Use descriptive test names, clear setup, and helper factories to reduce noise.</li>
+</ul>
+<p>Before:</p>
+<pre><code>test("1", async () =&gt; {
+  const a = await u();
+  const b = await v(a);
+  expect(b[0]).toBe(3);
+});
+</code></pre>
+<p>After:</p>
+<pre><code>test("returns 3 retries on first 429", async () =&gt; {
+  const user = await createUser();
+  const result = await fetchWithRetry(user.request);
+  expect(result.retries).toBe(3);
+});
+</code></pre>
+<p>Offer to extract repetitive test setup into builders or fixtures when it obscures assertions.</p>
+<h2>Encouraging positive patterns with praise</h2>
+<p>Do not only point out problems. Noticing good work shapes habits.</p>
+<ul>
+<li>Be specific. “Great separation between parsing and validation in ConfigLoader. It made edge case reasoning simple.”</li>
+<li>Connect to impact. “The choice to make RetryPolicy pure allows us to reuse it in the scheduler. That will save time on the next feature.”</li>
+<li>Suggest documenting good patterns. “This structured log field naming is clean. Let us add this example to our logging guide.”</li>
+</ul>
+<p>Praise is not fluff; it is guidance. Authors repeat what gets recognized.</p>
+<h2>Bringing it all together on a real change</h2>
+<p>Imagine a PR that:</p>
+<ul>
+<li>Adds a RetryPolicy abstraction</li>
+<li>Updates fetchData to use retry on 5xx</li>
+<li>Adds a config flag for max attempts</li>
+<li>Touches logging to add context</li>
+<li>Includes two new unit tests</li>
+</ul>
+<p>Your review flow:</p>
+<ul>
+<li>Context. Read description. It says: “Handle transient 5xx with retries, default maxAttempts=3, jitter backoff.” Tests listed. Good.</li>
+<li>Skim diff. Files: retry.js, fetchData.js, config.ts, logger.ts, tests. Manageable size.</li>
+<li>Design. RetryPolicy as a pure function returning nextDelay and whether to continue. Good separation. fetchData depends on it via an injected dependency. Good.</li>
+<li>Correctness and tests. Tests cover retry after first 5xx and stop on 4xx. Ask for test on jitter and cap at max attempts. Suggest test for non-idempotent methods skipping retry.</li>
+<li>Edge cases. Ask about 429 (rate limit) handling and idempotency for POSTs with side effects.</li>
+<li>Security/performance. Logging includes status and attempt count; ensure no token in logs. Performance: no heavy operations introduced; backoff delays are correct.</li>
+<li>Readability. Rename delayMs to backoffMs, add docstring to RetryPolicy on formula, move constants to config with sane defaults.</li>
+</ul>
+<p>Your summary:</p>
+<ul>
+<li>“Intent: add retry with jitter for 5xx in fetchData. Design: clean isolation via RetryPolicy. Blocking: add test for jitter distribution and enforce no retry on non-idempotent methods unless explicitly allowed. Suggestions: rename delayMs, doc comment on formula, mask any auth headers in logs. Nice work introducing a pure policy with injected dependency.”</li>
+</ul>
+<p>The author adds tests and a small guard for idempotency. You approve and leave a final note praising the isolation and proposing adding RetryPolicy to shared utilities later.</p>
+<h2>Growing your personal review practice</h2>
+<p>Make your process explicit and iterate.</p>
+<ul>
+<li>Keep a short personal checklist handy. Paste it atop your first comment until it becomes muscle memory.</li>
+<li>Track your top three recurring comments. If you repeat them across PRs, propose a guideline or a linter rule.</li>
+<li>Reflect weekly on a review you are proud of and one you are not. What made the difference? Timeboxing, clarity, or tone?</li>
+<li>Ask for feedback on your reviews. “Was my summary helpful? What could I do to make my comments more actionable?”</li>
+<li>Pair-review occasionally. Watching a teammate’s process can reveal blind spots and new heuristics.</li>
+</ul>
+<p>Consistency does not mean rigidity. Adapt depth and focus to the change’s risk. But keep the order: start with context, review design first, verify correctness with tests, probe edges and risks, then polish readability. Use clear, kind, and actionable comments. Offer examples. Manage your time. And remember, your goal is not to win arguments, but to help the team ship safer, simpler code.</p></article>
+    
+    <div class="pagenav">
+      <a href="lesson-preparing-and-submitting-reviews-set-the-stage-for-success.html"><span class="dir">&larr; Previous</span>Preparing and Submitting Reviews: Set the Stage for Success</a>
+      <a href="lesson-collaborating-to-done-resolving-feedback-merging-and-improving-the-system.html"><span class="dir">Next &rarr;</span>Collaborating to Done: Resolving Feedback, Merging, and Improving the System</a>
+    </div>
+  </div>
+</body>
+</html>

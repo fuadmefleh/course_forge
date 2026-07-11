@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preparing and Submitting Reviews: Set the Stage for Success - Effective Code Review: A Practical Guide</title>
+  <meta name="description" content="A practical guide to preparing pull requests for fast, high-quality reviews with small scope, clear descriptions, helpful artifacts, wise reviewer choices, automation, and targeted questions." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #24292f;
+      line-height: 1.6;
+    }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+    .back { display: inline-block; font-size: 0.85rem; color: #57606a; margin-bottom: 24px; }
+    .hero-img { width: 100%; border-radius: 12px; margin-bottom: 32px; display: block; }
+    h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 12px; }
+    .subtitle { font-size: 1.1rem; color: #57606a; margin-bottom: 32px; }
+    .meta { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #2563eb; margin-bottom: 8px; }
+    article h2 { font-size: 1.4rem; margin: 2em 0 0.6em; }
+    article h3 { font-size: 1.15rem; margin: 1.6em 0 0.5em; }
+    article p, article ul, article ol { margin-bottom: 1em; }
+    article ul, article ol { padding-left: 1.4em; }
+    article blockquote {
+      border-left: 3px solid #2563eb;
+      padding: 0.2em 1.2em;
+      margin: 1.5em 0;
+      color: #444;
+      font-style: italic;
+    }
+    article figure { margin: 2em 0; }
+    article figure img { width: 100%; border-radius: 10px; display: block; }
+    article figcaption { font-size: 0.85rem; color: #57606a; margin-top: 8px; }
+    article pre { background: #f6f8fa; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    .lesson-list { list-style: none; margin-top: 24px; }
+    .lesson-card {
+      display: block;
+      border: 1px solid #e2e2e2;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    .lesson-card:hover { border-color: #2563eb; text-decoration: none; }
+    .lesson-card .num { font-size: 0.75rem; color: #2563eb; margin-bottom: 4px; display: block; }
+    .lesson-card .excerpt {
+      color: #57606a;
+      font-size: 0.9rem;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .pagenav { display: flex; justify-content: space-between; gap: 16px; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e2e2; }
+    .pagenav a { display: block; border: 1px solid #e2e2e2; border-radius: 10px; padding: 12px 16px; font-size: 0.9rem; max-width: 48%; }
+    .pagenav a:hover { border-color: #2563eb; text-decoration: none; }
+    .pagenav .dir { font-size: 0.7rem; text-transform: uppercase; color: #57606a; display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Effective Code Review: A Practical Guide</a>
+    
+    <span class="meta">Part 2 of 4 &middot; 23 min read</span>
+    <img class="hero-img" src="images/preparing-and-submitting-reviews-set-the-stage-for-success-hero.png" alt="Preparing and Submitting Reviews: Set the Stage for Success" />
+    <h1>Preparing and Submitting Reviews: Set the Stage for Success</h1>
+    <article><h2>Why preparation matters</h2>
+<p>A review starts long before someone opens your pull request. Your choices in how you shape the change, what you include in the description, and how you support the reviewer will decide whether the review takes 15 minutes or three days.</p>
+<p>Good preparation pays off in three ways:</p>
+<ul>
+<li>Speed. Focused changes with a clear story can be read and understood faster.</li>
+<li>Quality. When the easy issues are automated and the hard questions are spelled out, reviewers can spend their attention on the system’s behavior and design.</li>
+<li>Morale. Reviewers feel respected when you make their job easy. They reciprocate with better feedback and quicker responses.</li>
+</ul>
+<p>Think of it as setting the stage. You are the host. Reviewers are the guests. The code is the main course, but the lighting, plating, and seating matter too. This lesson shows how to prepare code and context so reviewers can be effective and fast.</p>
+<h2>Keep changes small and focused</h2>
+<p>Small, focused changes are the single strongest predictor of fast, high-quality reviews. They reduce cognitive load. They lower the risk that two unrelated decisions influence each other. They make it easier to roll back.</p>
+<p>Aim for pull requests that do one thing. If you find yourself writing “and” in the title, it probably needs to be split.</p>
+<p>Here are practical ways to get there:</p>
+<ul>
+<li>Split large tasks into steps. If you are adding a feature that needs model changes, API endpoints, and UI, consider three pull requests:
+<ol>
+<li>Data layer changes</li>
+<li>Backend API scaffolding</li>
+<li>UI integration</li>
+</ol>
+<p>Merge them behind a feature flag (see below), and enable once all land.</p>
+</li>
+<li>Use feature flags to ship incrementally. Wrap new code behind a runtime switch. Deploy dark code to production, test it in isolation, toggle it on for staff, then for a small percentage of users. This lets you merge early and review in smaller chunks.</li>
+<li>Isolate refactors from behavior changes. If you need to rename functions, move files, or reformat code, do that in its own pull request. Reviewers can then auto-approve or skim the refactor, and focus on the logic in the next pull request.</li>
+</ul>
+<p>Concrete examples:</p>
+<ul>
+<li>Backend example. You need to add pagination to a list endpoint and also rename a helper. Do not rename the helper in the same pull request. First, submit a PR that renames the helper across the codebase with no behavior changes. Then, separately, add pagination logic behind a feature flag like <code>feature.listV2Pagination</code>, default off.</li>
+<li>Frontend example. You are adding a search bar and updating the theme. Ship theme updates (color tokens, spacing) as one PR. Add the search bar UI scaffold as a second PR, behind a flag. Wire it to the API in a third PR. Each review is focused and can be merged as soon as it passes.</li>
+</ul>
+<p>Tips for keeping diffs small:</p>
+<ul>
+<li>Prefer multiple commits with clean messages over one large commit. Each commit should tell a small part of the story, and the PR should hold them together.</li>
+<li>If a file shows 90 percent churn due to formatting or a move, stop and split the move/format into a separate PR. You can often configure tools to detect file renames so history is preserved.</li>
+<li>If a change crosses many files due to a signature change, consider adding an adapter or overload to maintain the old signature temporarily. That limits the blast radius and lets you migrate call sites in batches.</li>
+</ul>
+<p>Signs your pull request is too large:</p>
+<ul>
+<li>It touches more than ~500 lines of actual logic (not counting generated files, snapshots, or formatting).</li>
+<li>It mixes concerns. Example: “add analytics events and refactor dashboard layout.”</li>
+<li>You cannot summarize the change in one sentence without commas.</li>
+</ul>
+<p>What to do when a task truly cannot be split:</p>
+<ul>
+<li>Use clear flags and dead code guards so the new path is logically isolated.</li>
+<li>Add aggressive comments that mark temporary code and a follow-up task to remove them.</li>
+<li>Timebox the review and invite a synchronous walkthrough.</li>
+</ul>
+<blockquote>
+<p>Small diffs get read. Big diffs get skimmed. If you want meaningful feedback, give reviewers less to hold in their head.</p>
+</blockquote>
+
+<h2>Write a clear pull request description</h2>
+<p>Your pull request description is the reviewer’s map. A good map answers three questions up front: what problem you are solving, how you solved it, and what to look out for. It should be complete but concise. Default to plain language.</p>
+<p>Use a simple template you repeat on every PR:</p>
+<ul>
+<li><strong>Title</strong>: One crisp sentence. Example: “API: Add cursor-based pagination to GET /orders behind feature flag.”</li>
+<li><strong>Problem</strong>: What was wrong or missing. Include the user or system impact.</li>
+<li><strong>Approach</strong>: How you solved it. Outline the main changes with references to files/modules.</li>
+<li><strong>Trade-offs</strong>: What you chose not to do, and why.</li>
+<li><strong>Tests performed</strong>: Manual steps, automated tests, or both.</li>
+<li><strong>Risks</strong>: What could break or regress. Note performance, security, and data migration risks.</li>
+<li><strong>Rollback plan</strong>: How to revert if needed. Include the command or process.</li>
+</ul>
+<p>Here is an example you can adapt:</p>
+<p><strong>Title</strong><br />API: Add cursor-based pagination to GET /orders behind feature flag</p>
+<p><strong>Problem</strong><br />Listing orders timed out beyond 5k records. Offset pagination is slow and inconsistent when new orders are written during listing.</p>
+<p><strong>Approach</strong></p>
+<ul>
+<li>Introduced cursor-based pagination using created_at, id as tie-breaker.</li>
+<li>Added optional query params <code>cursor</code> and <code>limit</code> (default 50, max 500).</li>
+<li>Implemented a feature flag <code>orders_pagination_v2</code> via config.</li>
+<li>Kept old behavior when flag is off to maintain backward compatibility.</li>
+<li>Extracted repository method <code>findOrdersPage(cursor, limit)</code>. No other refactors.</li>
+</ul>
+<p><strong>Trade-offs</strong></p>
+<ul>
+<li>Cursor is opaque and Base64-encoded JSON. Chose this for flexibility, at the cost of readability in logs.</li>
+<li>Did not add index on <code>created_at,id</code> yet. Measured acceptable performance for current volumes. Will add in follow-up if needed.</li>
+</ul>
+<p><strong>Tests performed</strong></p>
+<ul>
+<li>Unit tests for repository cursor logic, edge cases (empty result, end of list).</li>
+<li>Integration test for API happy path and invalid cursor handling.</li>
+<li>Manual test in staging: listed 50, 500, 1000 records with flag on/off.</li>
+<li>Load test: p95 latency dropped from 2200 ms to 320 ms with flag on (10k records).</li>
+</ul>
+<p><strong>Risks</strong></p>
+<ul>
+<li>Potential for duplicate or skipped records if filters change between pages. Mitigated by stable sorting and tie-breaker.</li>
+<li>Backward compatibility: clients might start sending <code>limit</code> above max; we clamp and return 400 on negative values.</li>
+<li>Additional DB load from new query pattern under heavy concurrency.</li>
+</ul>
+<p><strong>Rollback plan</strong></p>
+<ul>
+<li>Toggle <code>orders_pagination_v2</code> off. Old endpoint path remains.</li>
+<li>If needed, revert commit <code>abc1234</code> which introduced the repo method and HTTP param parsing.</li>
+</ul>
+<p>Reviewers will use this description to plan their read:</p>
+<ul>
+<li>They scan the problem and approach to understand the shape of the change.</li>
+<li>They skim the trade-offs to see where you want focus.</li>
+<li>They look at tests performed and risks to gauge confidence and find edge cases.</li>
+<li>They verify that rolling back is safe if an incident occurs.</li>
+</ul>
+<p>Make the description skimmable:</p>
+<ul>
+<li>Use short paragraphs and bullets.</li>
+<li><strong>Bold</strong> or capitalize key labels (Problem, Approach).</li>
+<li>Link to tickets, designs, and related PRs.</li>
+<li>Include code pointers like “see OrdersRepository.scala lines 110–185” for complex logic.</li>
+<li>If your system uses migration plans or runbooks, link them right in the description.</li>
+</ul>
+<p>If you are extending or reverting a previous change, start with a one-line history: “Follow-up to #8421 to enable pagination for partners. Reverts part of #8200 where we removed the legacy cursor format.”</p>
+<p>Finally, keep the description updated. If the code changes in response to review, update the approach, risks, and rollback plan. Add a short “Changes since initial review” note so reviewers do not have to diff your diffs.</p>
+
+<h2>Provide reviewable artifacts</h2>
+<p>Most changes are easier to judge when reviewers can see, not just read. Add artifacts that show the outcome:</p>
+<ul>
+<li>Before and after screenshots for visual changes. If the difference is subtle, annotate with arrows or text. Provide both light and dark modes if relevant.</li>
+<li>Short screen recordings (30–60 seconds) for interactive flows. Narrate briefly: “This shows the new pagination, note the cursor update in the URL.”</li>
+<li>Logs or traces for backend changes. Paste a trimmed log excerpt showing the new code path, or attach a link to an observability dashboard with a saved query.</li>
+<li>Links to tickets, design docs, and specs. Point to the exact section you implemented. Do not make reviewers hunt through a long doc.</li>
+<li>Data examples. For schema or serialization changes, include sample payloads before and after, with differences highlighted.</li>
+<li>Query plans or performance snapshots when you touched a hot path. A single EXPLAIN output or a p95 graph helps reviewers judge risk.</li>
+</ul>
+<p>Concrete artifact examples:</p>
+<ul>
+<li>UI color contrast change: Show a side-by-side screenshot with WCAG contrast ratios. Provide the Figma URL with a note “component tokens used: color.text.muted.”</li>
+<li>API behavior: Postman collection link with two saved requests (flag on/off), and paste the JSON diff for a typical response.</li>
+<li>Task runner optimization: Include a link to a CI job page before and after your change. Note the time difference and resource usage.</li>
+</ul>
+<p>Make artifacts easy to consume:</p>
+<ul>
+<li>Keep files small. Compress videos. Crop images to the relevant area.</li>
+<li>Place the most useful artifact at the top of the PR description.</li>
+<li>If your repo uses a PR template, reserve a section for artifacts so they are not lost in comments.</li>
+</ul>
+<p>Artifacts do not replace automated tests, but they accelerate human understanding. They also create a record for future readers trying to understand why something changed.</p>
+<h2>Choose reviewers and timing wisely</h2>
+<p>Pick reviewers who can be effective. You need at least one person who knows the domain and one who can represent broader codebase conventions. If you are changing logging, pick someone who lives in observability. If you are touching a cross-cutting concern, pick a generalist who will think about composition and naming.</p>
+<p>Use these guidelines:</p>
+<ul>
+<li>Match reviewer to the part of the change. A database migration should involve someone from the data team. A UI refactor should involve a frontend maintainer.</li>
+<li>Consider load and time zones. If features need to ship this week, do not send a large PR to someone on vacation or seven time zones away. Ask in chat who is available.</li>
+<li>Avoid single points of failure. If only one person can review a critical area, pair with them or schedule a walkthrough. Capture their knowledge in docs.</li>
+</ul>
+<p>Time your request so it lands well:</p>
+<ul>
+<li>Respect focus hours. Do not expect fast turnaround on Friday afternoons or during known release windows.</li>
+<li>Batch related small PRs if reviewers prefer a single sitting, but keep each PR scoped.</li>
+<li>If the change is urgent, say so, and propose a specific timeline. Urgency without context reads as pressure.</li>
+</ul>
+<p>Set clear expectations for review time:</p>
+<ul>
+<li>Give an honest estimate of reading time based on size and complexity. “This should be a 20–30 minute review. If it takes longer than 45 minutes, let’s sync live.”</li>
+<li>State when you need the review and why. “Need approval by Wednesday to hit the beta window.”</li>
+<li>Offer a fallback. “If you do not have cycles, happy to reassign or do a 15-minute call.”</li>
+</ul>
+<p>Mark drafts versus ready-for-review clearly:</p>
+<ul>
+<li>Use your platform’s Draft or WIP state until tests pass and the description is complete. A Draft tells people not to spend time yet.</li>
+<li>When you mark Ready for review, post a short comment summarizing any changes since opening. Tag reviewers and restate timing expectations.</li>
+<li>If the PR is blocked on an external dependency, say so to prevent churn.</li>
+</ul>
+<p>Remember social cues:</p>
+<ul>
+<li>Thank reviewers for their time. Recognize thorough reviews in a public channel.</li>
+<li>Avoid shotgun-assigning many reviewers hoping someone bites. It spreads accountability thin. Two focused reviewers are better than five optional ones.</li>
+</ul>
+<h2>Automate the obvious</h2>
+<p>Automate anything a machine can check so human reviewers do not have to. This keeps reviews about design, correctness, and risk.</p>
+<p>Automate formatting:</p>
+<ul>
+<li>Use a formatter (Prettier, gofmt, Black) to enforce a single style. Run it on save or as a pre-commit hook so your diffs are free of style noise.</li>
+<li>Avoid manual nitpicks about braces, quotes, or spaces. Let the tool decide.</li>
+</ul>
+<p>Automate linting and static checks:</p>
+<ul>
+<li>Use linters (ESLint, RuboCop, Flake8) with rules tuned to your codebase. Start with a manageable set and ratchet up over time.</li>
+<li>Run type checkers (TypeScript, mypy, Flow) and schema validators where applicable.</li>
+<li>Configure your CI to fail on violations that matter and warn on those that are nice to fix but not blockers.</li>
+</ul>
+<p>Automate tests and build:</p>
+<ul>
+<li>Run unit, integration, and smoke tests in CI on every pull request.</li>
+<li>Keep CI fast. Parallelize jobs and cache dependencies. Slow CI encourages bypasses and hurts review flow.</li>
+<li>If you have flaky tests, quarantine them with clear labels and an owner to fix. Do not let flakiness block unrelated reviews indefinitely.</li>
+</ul>
+<p>Automate quality gates:</p>
+<ul>
+<li>Block merges on red CI. Do not rely on social enforcement.</li>
+<li>Optionally require code coverage thresholds for touched files, not just global coverage.</li>
+<li>Consider dependency checks, secret scanning, and policy tests to catch issues early.</li>
+</ul>
+<p>Automate metadata:</p>
+<ul>
+<li>Use a PR template to prompt for Problem, Approach, Tests, Risks, Rollback.</li>
+<li>Auto-label PRs based on files changed (e.g., <code>area/ui</code>, <code>area/api</code>).</li>
+<li>Auto-assign reviewers based on ownership maps, but allow humans to adjust.</li>
+</ul>
+<p>Example pre-commit config snippet:</p>
+<ul>
+<li>Format staged files: <code>prettier --write</code></li>
+<li>Lint staged JS/TS: <code>eslint --max-warnings=0</code></li>
+<li>Run fast unit tests: <code>npm test -- --changedSince=origin/main</code></li>
+<li>Check secrets: <code>gitleaks protect --staged</code></li>
+</ul>
+<p>When the obvious is automated:</p>
+<ul>
+<li>Your pull request is quieter. Reviewers waste less time commenting on style or missing imports.</li>
+<li>The diff stays focused on logic. Tools reformat code before you ask for review.</li>
+<li>Trust increases. Green checks give reviewers confidence to spend time on architecture and edge cases.</li>
+</ul>
+<h2>Ask for specific feedback</h2>
+<p>Guide your reviewers. Tell them where you are confident and where you want scrutiny. This reduces back-and-forth and puts attention where it matters.</p>
+<p>Add a short “Notes for reviewers” section in your PR description:</p>
+<ul>
+<li>Call out uncertain areas. “I am not sure about the cursor encoding format. Do we prefer compact or human-readable?”</li>
+<li>Highlight tricky decisions. “I chose to clamp <code>limit</code> at 500 server-side. Is this consistent with other endpoints?”</li>
+<li>Point to specific files. “The main logic is in OrdersRepository.scala, lines 110–185. Everything else is wiring.”</li>
+<li>Share assumptions. “Assumes created_at is monotonic enough for our workload. Staging tests look stable.”</li>
+</ul>
+<p>Ask targeted questions like you would in a design review:</p>
+<ul>
+<li>“Does the way I split this change across modules match our layering?”</li>
+<li>“Any security concerns with exposing the cursor in the URL?”</li>
+<li>“Is this error message understandable to API clients?”</li>
+</ul>
+<p>If you tried alternatives, say so briefly:</p>
+<ul>
+<li>“I considered returning Link headers but chose JSON body for simplicity. If we want headers, I can switch.”</li>
+</ul>
+<p>Direct requests prevent generic comments. Reviewers love knowing where to focus.</p>
+<h2>Work the commit history</h2>
+<p>A clean history makes review faster and blame more useful later. It also signals care.</p>
+<p>Aim for these practices:</p>
+<ul>
+<li>Make each commit build and pass tests. This avoids reviewers getting stuck mid-history.</li>
+<li>Write commit messages that answer why and what. Start with a short imperative subject. Add a body if the change is non-trivial.</li>
+<li>Group mechanical changes separately. One commit for renames or moves, one for logic.</li>
+<li>Rebase or squash before merge to present a tidy story. Use “squash and merge” with an edited message that captures the PR’s purpose.</li>
+</ul>
+<p>Sample good commit series for pagination:</p>
+<ul>
+<li>chore(repo): rename listOrders to findOrdersPage</li>
+<li>feat(api): add cursor params and parsing behind flag</li>
+<li>test(api): add integration tests for new pagination</li>
+<li>docs(api): document cursor usage in OpenAPI</li>
+</ul>
+<p>Avoid hiding logic changes in “chore” commits. Reviewers rely on commit messages to navigate.</p>
+<h2>Handle updates during review</h2>
+<p>Change is normal during review. Your goal is to keep reviewers oriented and reduce rework.</p>
+<p>When you push updates:</p>
+<ul>
+<li>Reply to each comment with what you did, or why you did not. If you need more time to investigate, say so and set an expectation.</li>
+<li>Post a summary comment at the top: “Changes since initial review: switched cursor to URL-safe Base64, added invalid-cursor test, clamped limit at 500.”</li>
+<li>If the risk profile changed, update Risks and Rollback plan in the description.</li>
+<li>If the PR ballooned, consider splitting it and closing this one with a pointer to the new PRs.</li>
+</ul>
+<p>Manage re-reviews:</p>
+<ul>
+<li>If only a few files changed, tag the reviewer with a comment pointing to those diffs.</li>
+<li>If substantial changes were made, re-request review formally so it appears in their queue.</li>
+<li>Be mindful of the number of review cycles. After two rounds with many comments, offer a live walkthrough.</li>
+</ul>
+<p>Keep the CI green between updates. If you break the build, prioritize fixing it before asking for more review time.</p>
+<h2>Example: Putting it all together</h2>
+<p>Scenario: You need to add server-side sorting and pagination to an orders list, update the UI to use it, and retire an old offset-based approach. You want to ship in a week without risking downtime.</p>
+<p><strong>Step 1: Plan small, focused PRs</strong></p>
+<ul>
+<li>PR 1 (refactor only): Rename repository methods and move shared query code to a new module. No behavior change.</li>
+<li>PR 2 (backend feature, flagged): Add cursor-based pagination and sorting options to GET /orders behind flag <code>orders_pagination_v2</code>. Keep the old path in place.</li>
+<li>PR 3 (UI integration, flagged): Update the admin UI to use new cursor-based API when the flag is on.</li>
+<li>PR 4 (cleanup): Remove old offset-based code and deprecate the legacy endpoint after confidence is high.</li>
+</ul>
+<p><strong>Step 2: Set up automation</strong></p>
+<ul>
+<li>Add or confirm pre-commit hooks run formatter and linter.</li>
+<li>Ensure CI runs unit tests for the repo and integration tests for the /orders endpoint.</li>
+<li>Add a secret scan in CI, since you will touch HTTP code and logging.</li>
+</ul>
+<p><strong>Step 3: Write PR 1 (refactor only)</strong></p>
+<ul>
+<li>Title: “repo: Extract order query builder to shared module, no behavior change.”</li>
+<li>Description: State the problem (we need a stable base for new pagination), the approach (move methods, keep names), tests (no logic changed, all tests pass), risks (low), rollback (revert commit).</li>
+<li>Artifacts: None needed beyond CI passing.</li>
+<li>Reviewers: One backend maintainer, one generalist. ETA: “5–10 minute skim.”</li>
+<li>Notes for reviewers: “Pure moves/renames. Please sanity check import paths.”</li>
+</ul>
+<p><strong>Step 4: Write PR 2 (backend feature, flagged)</strong></p>
+<ul>
+<li>Title: “API: Add cursor-based pagination and server-side sort to GET /orders behind feature flag.”</li>
+<li>Description using the template:
+<ul>
+<li>Problem: Offset pagination too slow, unstable with concurrent writes.</li>
+<li>Approach: Add <code>cursor</code> and <code>sort_by</code> params, implement repository method, feature-flagged, keep legacy behavior off-flag.</li>
+<li>Trade-offs: JSON-encoded cursor for flexibility, no new index yet.</li>
+<li>Tests performed: unit, integration, basic load test with results.</li>
+<li>Risks: duplicates/skips if filters change, potential DB load.</li>
+<li>Rollback plan: toggle flag, revert commit <code>abc1234</code> if needed.</li>
+</ul>
+</li>
+<li>Artifacts:
+<ul>
+<li>Paste sample before/after JSON.</li>
+<li>Link to Grafana dashboard showing latency improvement.</li>
+<li>Short log snippet showing “Using cursor-based pagination path.”</li>
+</ul>
+</li>
+<li>Reviewers: Backend owner, performance-minded engineer.</li>
+<li>Timing: “Estimate 25–35 minutes. Need approval by Wed. If &gt;45 minutes, happy to do a 20-minute call.”</li>
+<li>Notes for reviewers: “Main logic in OrdersRepository.scala lines 110–185. Unsure about the cursor encoding; feedback welcome.”</li>
+</ul>
+<p><strong>Step 5: Write PR 3 (UI integration, flagged)</strong></p>
+<ul>
+<li>Title: “UI: Switch Orders table to cursor-based API when orders_pagination_v2 is on.”</li>
+<li>Description:
+<ul>
+<li>Problem: UI stalls on large order sets.</li>
+<li>Approach: Use new API when flag is on, keep old path otherwise; update table footer to show ‘Next’ based on <code>next_cursor</code>; added URL param sync for deep linking.</li>
+<li>Trade-offs: Chose not to show total pages to avoid expensive count query.</li>
+<li>Tests performed: Cypress tests for next/prev flow; manual test on staging with large dataset.</li>
+<li>Risks: Minor layout shift in footer on small screens.</li>
+<li>Rollback plan: Toggle flag off to fall back to old path.</li>
+</ul>
+</li>
+<li>Artifacts:
+<ul>
+<li>Before/after screenshots of the table footer, with arrows marking the new “Next” state.</li>
+<li>40-second screen recording clicking through pages.</li>
+</ul>
+</li>
+<li>Reviewers: Frontend owner, design reviewer for UX consistency.</li>
+<li>Notes for reviewers: “State management change is in OrdersTable.tsx lines 200–280.”</li>
+</ul>
+<p><strong>Step 6: Write PR 4 (cleanup)</strong></p>
+<ul>
+<li>Title: “Remove legacy offset pagination and deprecate limit/offset params.”</li>
+<li>Description: Summarize the confidence gained (metrics, lack of errors) and removal steps. Link to release notes entry for client developers.</li>
+<li>Artifacts: Link to monitoring showing stable p95 for a week.</li>
+<li>Reviewers: Backend owner, API governance.</li>
+</ul>
+<p>Across these PRs, keep comments and updates tight:</p>
+<ul>
+<li>After feedback on cursor encoding, decide and state it. “Switched to URL-safe Base64 to avoid URL encoding issues.”</li>
+<li>If someone asks for an index, open a separate PR with that migration and link it.</li>
+<li>When all PRs have shipped and the flag is on by default, schedule the flag removal in a separate, small PR with a brief description.</li>
+</ul>
+<p>This end-to-end approach keeps each review focused, creates multiple safe checkpoints, and gives you a fast path to production while controlling risk.</p>
+<h2>Make risk and rollback real</h2>
+<p>A risk section that says “low risk” is not helpful. Be concrete.</p>
+<ul>
+<li>List the symptoms you would see if things go wrong. Example: “Spike in 400 responses due to invalid cursor parsing.”</li>
+<li>List the metrics or alerts you will watch after merge. Example: “Orders API p95 latency, 4xx rate.”</li>
+<li>State the exact rollback steps with commands. Example: <code>kubectl set env deployment/api ORDERS_PAGINATION_V2=false</code> or <code>git revert abc1234</code>.</li>
+</ul>
+<p>If the rollback is not trivial, consider a canary plan:</p>
+<ul>
+<li>Enable the feature for 5 percent of traffic or only for internal users.</li>
+<li>Monitor for one day, then expand.</li>
+<li>Have a pager rotation aware of the change.</li>
+</ul>
+<p>Rollbacks should be habitual, not heroic. Practice them in staging.</p>
+<h2>Link the dots for future readers</h2>
+<p>Future you, or a teammate six months from now, will read this PR to understand why the system behaves as it does. Help them.</p>
+<ul>
+<li>Use stable language in titles and descriptions so searches find your PRs.</li>
+<li>Link related work. “Part 2 of 3: UI integration. See #9021 (backend) and #9050 (cleanup).”</li>
+<li>Mention tickets with permanent IDs, not just Jira URLs that might change.</li>
+<li>If the change alters a runbook or doc, link to the doc PR too.</li>
+</ul>
+<p>Think of the pull request as a durable artifact. The code shows what changed. The PR should show why.</p>
+<h2>When a change spans repos</h2>
+<p>Cross-repo changes add coordination cost. Reduce surprise.</p>
+<ul>
+<li>Open PRs in dependent repos early as Draft with a clear dependency note. “Blocked by api#9021.”</li>
+<li>In the main PR, list affected repos and link their PRs. Provide a sequence to merge safely.</li>
+<li>Where possible, design for forward and backward compatibility so deployments do not have to be lockstep.</li>
+<li>Use feature flags or versioned endpoints to bridge rollout.</li>
+</ul>
+<p>Reviewers will appreciate knowing where the edges are and how to test across them.</p>
+<h2>Use checklists to avoid misses</h2>
+<p>A lightweight checklist can prevent common mistakes. Customize for your team.</p>
+<p>Example author checklist:</p>
+<ul>
+<li>PR title is clear and specific.</li>
+<li>Problem, Approach, Trade-offs, Tests, Risks, Rollback plan written.</li>
+<li>Artifacts attached (screenshots, recordings, logs) if applicable.</li>
+<li>Feature flag added and defaulted off, with cleanup task filed.</li>
+<li>Linters, formatters, and tests pass locally.</li>
+<li>CI is green. Any flakes are quarantined.</li>
+<li>Ownership labels and reviewers set. Expectations stated.</li>
+<li>Notes for reviewers include targeted questions.</li>
+<li>Docs updated or doc PR linked.</li>
+<li>Rollout and monitoring plan noted.</li>
+</ul>
+<p>Checklists do not replace thinking. They create space for it by making the routine automatic.</p>
+<h2>Write for humans, not just for tools</h2>
+<p>Your code should be readable. Your pull request should be readable too.</p>
+<ul>
+<li>Prefer clear names in the description. Avoid team-internal jargon unless you define it.</li>
+<li>Explain why a surprising choice was necessary. Reviewers cannot infer constraints you had.</li>
+<li>Keep paragraphs short. Use bullets for lists. White space is a gift to readers.</li>
+<li>If the code solution mirrors a known pattern, say so. “This follows our standard cursor pagination pattern also used in /invoices.”</li>
+</ul>
+<p>When reviewers can follow your narrative, they can challenge assumptions and suggest better designs.</p>
+<h2>Plan the first reviewer minute</h2>
+<p>Imagine the first 60 seconds a reviewer spends on your PR. Shape that minute.</p>
+<ul>
+<li>Title tells the story.</li>
+<li>Description opens with Problem and Approach, then shows the most helpful artifact.</li>
+<li>CI badges are green or explain a known flake.</li>
+<li>Labels and ownership make it clear who should review.</li>
+<li>You have a short “Notes for reviewers” with specific questions.</li>
+</ul>
+<p>If that minute goes well, the rest often does too.</p>
+<h2>Coordinate with synchronous touchpoints when needed</h2>
+<p>Asynchronous review is the default, but some changes deserve a live touchpoint.</p>
+<ul>
+<li>Use a quick 10–15 minute call when the mental model is complex and would take longer to type.</li>
+<li>Share your screen and walk through the PR description, artifacts, and the main code path.</li>
+<li>Keep it focused on the questions you flagged. Take notes and update the PR after.</li>
+</ul>
+<p>Do not hide behind meetings. Use them to accelerate understanding when async stalls.</p>
+<h2>Offer a lightweight tour</h2>
+<p>For medium-sized PRs, a short “tour” comment can help:</p>
+<ul>
+<li>“Start at OrdersController: parse cursor and limit. Then jump to OrdersRepository: pagination logic. Finish at tests: invalid cursor cases.”</li>
+<li>“Ignore files in /vendor and snapshots; they are generated.”</li>
+</ul>
+<p>This is especially helpful for reviewers outside your area who still can provide valuable feedback.</p>
+<h2>Respect the reviewer’s workflow</h2>
+<p>Different reviewers work differently. Some skim the description and jump to code. Others read tests first. Accommodate both.</p>
+<ul>
+<li>Keep tests visible and easy to run locally.</li>
+<li>Group related changes so reviewers can review by commit or by file.</li>
+<li>Avoid hiding logic in generated diffs. If codegen is involved, explain the template changes and where to look.</li>
+</ul>
+<p>If a reviewer asks for a different format next time, consider incorporating it into your template or checklist.</p>
+<h2>Close the loop cleanly</h2>
+<p>When the PR merges:</p>
+<ul>
+<li>Post a brief note in the relevant channel. Include the flag state and rollout plan.</li>
+<li>If the change affects others (e.g., client developers), link release notes or migration guidance.</li>
+<li>File follow-ups for cleanup (remove flags, add indexes) with owners and due dates.</li>
+</ul>
+<p>Clean closure avoids lingering uncertainty and drives the system toward the desired end state.</p>
+<h2>Anticipate and reduce back-and-forth</h2>
+<p>Back-and-forth is expensive. Prevent it up front.</p>
+<ul>
+<li>Validate assumptions with a quick design note or issue before writing code for non-trivial changes.</li>
+<li>If your PR needs a schema change, pair with the data owner early.</li>
+<li>If you are unsure about a convention, search the codebase for precedents and link them.</li>
+</ul>
+<p>During review:</p>
+<ul>
+<li>If a reviewer misreads something, improve the code or comments, not just the PR description. The code is the source of truth.</li>
+<li>If a thread grows long, propose a quick call or summarize options and choose one with a tie-breaker.</li>
+</ul>
+<p>The best review threads are short because the preparation was strong.</p>
+<h2>Calibrate using past reviews</h2>
+<p>Use past reviews as feedback on your preparation process.</p>
+<ul>
+<li>If you often get “too big” comments, aim to cut PR size by 30 percent. Use flags more aggressively.</li>
+<li>If reviewers keep asking for artifacts, bake them into your template.</li>
+<li>If questions repeat about risks or rollback, improve those sections.</li>
+</ul>
+<p>Track your own throughput. If your PRs take days to merge, run a small retro on one recent PR. Where did the review stall? What prep step would have prevented it?</p>
+<h2>Examples across domains</h2>
+<p>Not all changes are backend feature work. A few more examples:</p>
+<ul>
+<li>Security fix:
+<ul>
+<li>Keep changes minimal. Avoid opportunistic refactors.</li>
+<li>PR description highlights threat model, impact, and urgency.</li>
+<li>Artifacts include a proof of exploit before and non-exploit after, in safe, redacted form.</li>
+<li>Reviewers: security engineer and code owner. Timing: fast lane with clear timebox.</li>
+</ul>
+</li>
+<li>Data migration:
+<ul>
+<li>Split into “write new, read old,” “dual read/write,” “cutover,” “cleanup.”</li>
+<li>Description includes backfill plan, verification query, and rollback by flipping read path.</li>
+<li>Artifacts include sample counts and consistency checks.</li>
+</ul>
+</li>
+<li>Library upgrade:
+<ul>
+<li>Isolate to a single PR with clear changelog notes.</li>
+<li>Run a smoke suite and attach results.</li>
+<li>Reviewers: owners of affected modules.</li>
+<li>Rollback: pin version and revert.</li>
+</ul>
+</li>
+</ul>
+<p>The same preparation principles apply: small scope, clear description, helpful artifacts, right reviewers, automation, and targeted questions.</p>
+<h2>Keep empathy at the center</h2>
+<p>Preparing a review is an act of empathy. You are making it easier for someone else to understand your work and keep the system healthy.</p>
+<p>Ask yourself:</p>
+<ul>
+<li>What context would I need if I had not been in the design discussions?</li>
+<li>Where is the risk highest, and how can I make it visible and safe?</li>
+<li>How can I make the reviewer’s first minute smooth?</li>
+</ul>
+<p>When you do this consistently, you get faster merges, better designs, and a calmer team.</p></article>
+    
+    <div class="pagenav">
+      <a href="lesson-why-code-review-exists-principles-roles-and-mindset.html"><span class="dir">&larr; Previous</span>Why Code Review Exists: Principles, Roles, and Mindset</a>
+      <a href="lesson-reviewing-code-well-heuristics-signals-and-constructive-comments.html"><span class="dir">Next &rarr;</span>Reviewing Code Well: Heuristics, Signals, and Constructive Comments</a>
+    </div>
+  </div>
+</body>
+</html>

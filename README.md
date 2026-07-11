@@ -26,6 +26,21 @@ storyboard → draft → author → illustrate → QA review → bundle
    one `lesson-<slug>.html` per lesson, and an `images/` folder. No database, no CMS coupling —
    drop it into whatever you're building, or serve it as-is.
 
+## Example
+
+[`examples/sample-course`](examples/sample-course) is a real, unedited 4-lesson course generated
+by `course-forge run "Effective Code Review: A Practical Guide" --lessons=4` — this is exactly
+what a `run` produces and exactly what passed QA, nothing touched up by hand.
+
+![Example course index page](examples/sample-course-preview.png)
+
+Open [`examples/sample-course/index.html`](examples/sample-course/index.html) directly in a
+browser (it's plain static HTML, no server needed), or clone the repo and run:
+
+```
+course-forge preview examples/sample-course
+```
+
 ## Install
 
 ```
